@@ -1,169 +1,509 @@
-# Technical Reference & Customization Guide — Navi^FROM^gate
+<div align="center">
 
-Navi^FROM^gate is an interactive client-side 3D Campus Navigator built using vanilla web technologies. This document serves as a technical manual for configuring, extending, and deploying the system.
+<img width="1264" height="309" alt="logo" src="https://github.com/user-attachments/assets/a5fe1542-b9a1-4e40-90aa-c40c9319275f" />
+
+### Interactive 3D Campus Navigation System
+
+<p>
+  <a href="#overview">Overview</a> •
+  <a href="#features">Features</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#deployment">Deployment</a> •
+  <a href="#contributing">Contributing</a> •
+  <a href="#license">License</a>
+</p>
+
+<p>
+  <img src="https://img.shields.io/badge/Status-In%20Development-orange" alt="Status">
+  <img src="https://img.shields.io/badge/Three.js-r128-black" alt="Three.js">
+  <img src="https://img.shields.io/badge/Platform-Web-blue" alt="Platform">
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
+</p>
+
+<p>
+  <a href="https://github.com/yourusername/navifromgate/issues">Report Bug</a>
+  ·
+  <a href="https://github.com/yourusername/navifromgate/issues">Request Feature</a>
+  ·
+  <a href="https://github.com/yourusername/navifromgate/discussions">Discussions</a>
+  ·
+  <a href="https://github.com/yourusername/navifromgate/wiki">Documentation</a>
+</p>
+
+</div>
 
 ---
 
-## 1. Directory Structure & Architecture
+> [!WARNING]
+> This project is currently under active development. Features, APIs, and data structures may change without notice.
 
-The application is structured into five modular components loaded sequentially via standard `<script>` tags in `index.html`:
+---
 
+<a id="overview"></a>
+
+# Overview
+
+Navi^FROM^gate is a fully client-side 3D campus navigation platform designed to provide interactive wayfinding inside educational facilities, universities, corporate campuses, and large institutional environments.
+
+Built using vanilla JavaScript and Three.js, the system renders an interactive WebGL environment capable of visualizing buildings, floors, rooms, facilities, and navigation paths without requiring backend infrastructure.
+
+---
+
+# Features
+
+## Core Functionality
+
+* Interactive 3D campus visualization
+* Real-time room navigation
+* Multi-floor building exploration
+* Dynamic floor isolation system
+* Indoor and outdoor navigation
+* Search and autocomplete
+* Responsive mobile interface
+* WebGL accelerated rendering
+* Client-side architecture
+* Customizable data-driven environment
+
+## Navigation System
+
+* Building-to-room routing
+* Entrance-based navigation
+* Animated route visualization
+* Floor-aware path generation
+* Vertical navigation support
+* Waypoint network architecture
+
+## Facility Support
+
+* Classrooms
+* Laboratories
+* Offices
+* Meeting rooms
+* Restrooms
+* Staircases
+* Elevators
+* Custom assets
+
+---
+
+# Preview
+
+<p align="center">
+  <img src="./assets/preview-placeholder.png" alt="Preview">
+</p>
+
+---
+
+# Table of Contents
+
+* Overview
+* Features
+* Quick Start
+* Project Structure
+* Architecture
+* 3D Engine
+* Data Configuration
+* UI System
+* Deployment
+* Security & Privacy
+* Browser Support
+* Roadmap
+* Contributing
+* License
+
+---
+
+# Quick Start
+
+## Clone Repository
+
+```bash
+git clone https://github.com/yourusername/navifromgate.git
+
+cd navifromgate
 ```
+
+## Run Locally
+
+```bash
+npx serve .
+```
+
+or simply open:
+
+```text
+index.html
+```
+
+---
+
+# Project Structure
+
+```text
 Navi^FROM^gate/
-├── index.html     # Semantic layout frames, modals, and container overlays
-├── styles.css     # Dark claymorphic design tokens and responsive media queries
-├── data.js        # Config arrays for buildings, rooms, teachers, and classes
-├── map3d.js       # WebGL scene manager, exploder animator, and path drawers
-├── app.js         # State controller, event routers, and search autocomplete logic
-└── README.md      # This technical documentation
+│
+├── index.html
+├── styles.css
+├── data.js
+├── map3d.js
+├── app.js
+│
+├── assets/
+│   ├── logo-placeholder.png
+│   ├── preview-placeholder.png
+│   └── icons/
+│
+├── docs/
+│   ├── architecture.md
+│   ├── deployment.md
+│   └── customization.md
+│
+└── README.md
 ```
-
-### Script Execution Sequence
-In `index.html`, the files are loaded in this order:
-1. `data.js`: Registers the world database in the global `window` namespace.
-2. `map3d.js`: Declares scene hooks and binds event triggers.
-3. `app.js`: Binds browser DOM elements, initializes routers, and sets the onboarding state.
 
 ---
 
-## 2. 3D WebGL Scene Engine (`map3d.js`)
+<a id="architecture"></a>
 
-The engine is built on **Three.js (r128)**. It uses a custom lighting model, an orthographic camera, and real-time screen projection to overlay HTML panels on WebGL meshes.
+# Architecture
 
-### A. Orthographic Camera & Steep Tilt Angles
-Unlike perspective projection, `THREE.OrthographicCamera` renders meshes with parallel projection lines, preserving isometric proportions regardless of distance. 
+The application follows a modular architecture consisting of four primary layers.
+
+```text
+┌─────────────────────────────┐
+│         User Interface      │
+│   HTML • CSS • Components   │
+└──────────────┬──────────────┘
+               │
+┌──────────────▼──────────────┐
+│      Application Layer      │
+│     State & Event Logic     │
+└──────────────┬──────────────┘
+               │
+┌──────────────▼──────────────┐
+│       Rendering Layer       │
+│      Three.js Engine        │
+└──────────────┬──────────────┘
+               │
+┌──────────────▼──────────────┐
+│         Data Layer          │
+│  Buildings • Rooms • Paths  │
+└─────────────────────────────┘
+```
+
+---
+
+# Technology Stack
+
+| Technology | Purpose               |
+| ---------- | --------------------- |
+| HTML5      | Layout                |
+| CSS3       | Styling               |
+| JavaScript | Application Logic     |
+| Three.js   | 3D Rendering          |
+| WebGL      | Graphics Acceleration |
+
+---
+
+# 3D Engine
+
+## Camera System
+
+The platform uses an orthographic camera to maintain consistent proportions across the environment.
+
+### Camera Modes
+
+| Mode           | Purpose                |
+| -------------- | ---------------------- |
+| Overview       | Full campus navigation |
+| Building Focus | Building inspection    |
+| Indoor View    | Room exploration       |
+
+### Smooth Interpolation
+
+Camera movement uses frame-based interpolation to ensure fluid transitions between navigation states.
+
+---
+
+## Floor Separation System
+
+Each floor is generated as an independent 3D group.
+
+When a floor is selected:
+
+* Upper floors move upward
+* Lower floors move downward
+* Exterior walls become transparent
+* Interior rooms become visible
+
+This creates an exploded architectural view.
+
+---
+
+## Pathfinding System
+
+Navigation routes are generated through waypoint networks.
+
+```text
+Origin
+ ↓
+Campus Network
+ ↓
+Building Entrance
+ ↓
+Target Floor
+ ↓
+Destination Room
+```
+
+Animated visual indicators are rendered directly inside the 3D scene.
+
+---
+
+# Data Configuration
+
+All environment data is stored inside:
+
+```text
+data.js
+```
+
+## Buildings
 
 ```javascript
-camera = new THREE.OrthographicCamera(
-  -frustum * aspect, frustum * aspect,
-  frustum, -frustum,
-  0.1, 1000
-);
-```
-
-To optimize visibility inside rooms during building focus:
-* **Overview Mode**: The camera offset vector is set to a standard isometric angle `(38, 38, 38)`.
-* **Indoor Mode**: The camera offset vector shifts to `(15, 38, 15)`. This elevates the camera angle (steeper tilt), letting you peer directly down into the interior room partitions.
-* **Camera Lerping**: Both the target offset (`targetCamOffset`) and target focus point (`targetLookAt`) interpolate smoothly using linear interpolation inside the frame loop:
-  ```javascript
-  currentCamOffset.lerp(targetCamOffset, 0.1);
-  camera.position.set(currentCamOffset.x + currentLookAt.x, currentCamOffset.y, currentCamOffset.z + currentLookAt.z);
-  ```
-
-### B. 3D-to-2D Coordinate Projections
-To display room numbers and icons (like stairs or toilets) on top of the 3D map, `map3d.js` projects the 3D world coordinates of room meshes into 2D CSS pixel coordinates.
-
-Inside the `animate()` loop:
-1. The world coordinates of each room mesh are calculated:
-   ```javascript
-   roomMesh.getWorldPosition(worldPos);
-   ```
-2. The world position is projected using the camera's projection matrix, transforming it into Normalized Device Coordinates (NDC) ranging from `[-1, 1]` on both axes:
-   ```javascript
-   worldPos.project(camera);
-   ```
-3. NDCs are mapped to the canvas container's pixel dimensions:
-   ```javascript
-   const x = (worldPos.x * 0.5 + 0.5) * canvas.clientWidth;
-   const y = (worldPos.y * -0.5 + 0.5) * canvas.clientHeight;
-   ```
-4. Absolute HTML pill badges are dynamically injected into `#roomLabelsContainer` at the calculated `(x, y)` coordinates.
-
-### C. Exploded Floor Stack Animation
-Instead of generating a single building mesh, `createBuilding3D` creates separate stacked `THREE.Group` groups for each floor.
-
-When a building is focused, `explodeBuilding(bldId, activeFloor)` calculates vertical offsets:
-* Floors **above** the selected floor slide up using a positive offset: `targetY = (f - 1) * FLOOR_HEIGHT + (f - activeFloor) * spacing`. Their outer shells are made semi-transparent (`opacity: 0.15`) and their interior rooms are hidden.
-* The **active** floor stays at its normal height. Its outer shell becomes almost transparent (`opacity: 0.05`), and its interior room blocks are made visible.
-* Floors **below** the active floor slide down slightly.
-* These values are interpolated smoothly on every render frame.
-
-### D. 3D Navigation Pathing
-Paths are calculated using segment nodes defined in `WAYPOINTS`. When a route is triggered:
-1. The algorithm joins the starting point (e.g. entrance coordinates or room column) to the nearest outdoor pathway segment.
-2. It traverses the path network to the destination building's door.
-3. It climbs vertically inside the building center to the destination floor height, ending at the room's mesh coordinate.
-4. Small sphere meshes are distributed at intervals of `0.8` units along the segments.
-5. An wave animation modulates their scales and opacities in the render loop to create a glowing flow effect.
-
-### E. Pointer Drag: Pan vs. Rotate
-To allow manual camera control, the drag action adjusts camera targets:
-* **Rotate** (Left Click / Touch drag): Updates `targetRotation += dx * 0.005`.
-* **Pan** (Right Click / Middle Click scroll drag): Translates the target camera focus (`targetLookAt`) along the camera's rotated horizon axes:
-  ```javascript
-  const cos = Math.cos(currentRotation);
-  const sin = Math.sin(currentRotation);
-  targetLookAt.x -= (screenX * cos - screenZ * sin);
-  targetLookAt.z -= (screenX * sin + screenZ * cos);
-  ```
-
----
-
-## 3. Customizing the World Database (`data.js`)
-
-All details are configured in `data.js`. Use the following tables to structure your modifications:
-
-### Buildings Layout
-Customize buildings by editing the `BUILDINGS` array:
-* `w` (Width) & `d` (Depth) dictate the 3D slab box sizes.
-* `x` & `z` dictate coordinates on the ground plane.
-* `floors` sets the vertical stacks count.
-
-### Room & Asset Generation
-Rooms are registered in the global `ROOMS` array. To represent vertical paths, restrooms, or science labs, set the `type` parameter:
-* `class`: Rendered as a light pastel blue room (`0x93B5C6`).
-* `lab`: Rendered as a soft pastel green room (`0x7FA37F`).
-* `office`: Rendered as a sand colored room (`0xC9A868`).
-* `special`: Used for custom assets. 
-  * If ID ends with `SC` (e.g. `A-1SC`), it is labeled as a Staircase/Elevator (`Scale 🛗`) and colored grey (`0x95A5A6`).
-  * If ID ends with `WC` (e.g. `A-1WC`), it is labeled as a Toilet (`Bagno 🚻`) and colored pink (`0xE8B4B8`).
-
----
-
-## 4. UI Design System (`styles.css` & `app.js`)
-
-### Dark Claymorphism Tokens
-We implement a tactile, puffed-up look using dark claymorphism variables:
-```css
-:root {
-  --bg-primary: #171720;      /* Dark slate matte background */
-  --bg-white: #242430;        /* Card surface */
-  --clay-shadow-outer: 8px 12px 28px rgba(0, 0, 0, 0.5), 
-                         -4px -4px 16px rgba(255, 255, 255, 0.02);
-  --clay-shadow-inner: inset 2px 2px 4px rgba(255, 255, 255, 0.08), 
-                         inset -3px -3px 6px rgba(0, 0, 0, 0.35);
-  --clay-border: 1px solid rgba(255, 255, 255, 0.05);
+{
+  id: "A",
+  x: 10,
+  z: 15,
+  w: 20,
+  d: 12,
+  floors: 3
 }
 ```
-* Bouncy scaling animations (`scale(0.98)` on click, `translateY(-3px)` on hover) simulate a squishy clay texture.
 
-### Overlap Management
-Floating UI overlays (such as bottom sheets, map switchers, and map legend cards) are separated by clear margins and custom z-indices:
-* `#mapCanvas`: `z-index: 1`
-* `#roomLabelsContainer`: `z-index: 18` (above building meshes, below cards)
-* `.floor-selector`: `z-index: 20`
-* `.bottom-sheet`: `z-index: 25`
-* `.toast`: `z-index: 300`
+## Rooms
+
+```javascript
+{
+  id: "A-101",
+  floor: 1,
+  type: "class"
+}
+```
+
+## Supported Types
+
+| Type    | Description     |
+| ------- | --------------- |
+| class   | Classroom       |
+| lab     | Laboratory      |
+| office  | Office          |
+| special | Custom Facility |
 
 ---
 
-## 5. Deployment Guide
+# User Interface System
 
-### Instant Hosting (GitHub Pages)
-1. Initialize git and commit:
-   ```bash
-   git init
-   git add .
-   git commit -m "deploy campus navigator"
-   ```
-2. Create a repository on GitHub.
-3. Push files, navigate to **Settings > Pages**, set Deployment Branch to `main`, and save.
-4. Your application will be live at `https://<username>.github.io/<repo-name>/`.
+The visual language follows a dark claymorphism design system.
 
-### Custom Subdomains (DNS Configuration)
-To link your school domain (e.g. `mappa.scuola.it`) on Netlify or Vercel:
-1. Register custom domain in Netlify/Vercel settings.
-2. In your school DNS provider console, add a **CNAME Record**:
-   * Name: `mappa`
-   * Target: your app domain (e.g. `Navi^FROM^gate.netlify.app.`)
-3. Enable SSL (HTTPS) to ensure smooth touch operations on mobile devices.
+## Design Principles
+
+* Consistent spacing
+* Soft elevation hierarchy
+* High readability
+* Mobile-first layouts
+* Touch-friendly controls
+* Smooth transitions
+
+## Layer Hierarchy
+
+| Element             | z-index |
+| ------------------- | ------- |
+| Toast Notifications | 300     |
+| Modal Windows       | 100     |
+| Bottom Sheets       | 25      |
+| Floor Selector      | 20      |
+| Room Labels         | 18      |
+| WebGL Canvas        | 1       |
+
+---
+
+# Deployment
+
+## GitHub Pages
+
+```bash
+git init
+
+git add .
+
+git commit -m "Initial deployment"
+
+git branch -M main
+
+git remote add origin https://github.com/username/repository.git
+
+git push -u origin main
+```
+
+Enable:
+
+```text
+Settings
+ └── Pages
+      └── Deploy from Branch
+```
+
+---
+
+## Netlify
+
+```bash
+Publish Directory: /
+Build Command: None
+```
+
+---
+
+## Vercel
+
+No additional configuration is required.
+
+---
+
+# Security & Privacy
+
+## Privacy First
+
+Navi^FROM^gate is designed as a client-side application.
+
+Benefits:
+
+* No mandatory user accounts
+* No server-side processing
+* No personal data storage
+* No third-party analytics required
+* No tracking infrastructure by default
+
+## Data Collection
+
+By default:
+
+```text
+User Data Collection: No
+Cookies: No
+Tracking: No
+Analytics: No
+Authentication: No
+```
+
+Any future integrations introducing telemetry or analytics should be clearly documented.
+
+---
+
+# Browser Support
+
+| Browser | Supported |
+| ------- | --------- |
+| Chrome  | Yes       |
+| Edge    | Yes       |
+| Firefox | Yes       |
+| Safari  | Yes       |
+| Opera   | Yes       |
+
+---
+
+# Accessibility
+
+Current accessibility goals:
+
+* Keyboard navigation
+* Screen reader compatibility
+* High contrast support
+* Responsive layouts
+* Reduced motion preferences
+
+---
+
+# Roadmap
+
+## Version 1.0 (ACTUAL)
+
+* Building navigation
+* Room search
+* Multi-floor support
+* Route generation
+* Teacher search
+
+## Version 1.5
+
+* Classroom schedules
+* Advanced filters
+* Custom themes
+
+## Version 2.0
+
+* Multi-campus support
+* PWA support
+* Offline mode
+* Localization system
+* Administrative dashboard
+
+---
+
+# FAQ
+
+### Does the project require a backend?
+
+No. The application runs entirely in the browser.
+
+### Can I customize buildings?
+
+Yes. All buildings and rooms are defined through `data.js`.
+
+### Can it be used outside schools?
+
+Yes. The architecture supports universities, offices, hospitals, museums, and custom facilities.
+
+---
+
+<a id="contributing"></a>
+
+# Contributing
+
+Contributions are welcome.
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Open a Pull Request
+
+Please ensure code quality, documentation updates, and compatibility with the existing architecture.
+
+---
+
+# Support
+
+For support, bug reports, or feature requests:
+
+* GitHub Issues
+* GitHub Discussions
+* Project Wiki
+
+---
+
+# License
+
+This project is distributed under the MIT License.
+
+See the `LICENSE` file for complete information.
+
+---
+
+<div align="center">
+
+Navi^FROM^gate
+
+Interactive 3D Campus Navigation Platform
+
+</div>
