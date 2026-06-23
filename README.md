@@ -91,7 +91,7 @@ Built using vanilla JavaScript and Three.js, the system renders an interactive W
 <p align="center">
   <img width="1892" height="882" alt="image" src="https://github.com/user-attachments/assets/5dc51a05-8bc7-4166-bacc-c625642945a0" />
   <img width="1900" height="852" alt="image" src="https://github.com/user-attachments/assets/9dd2ef89-26eb-4327-8349-47d8beb78858" />
-  <img width="1512" height="866" alt="image" src="https://github.com/user-attachments/assets/7b2ecd64-3a05-444d-ba46-b3ba482520c3" />
+  <img width="1901" height="887" alt="image" src="https://github.com/user-attachments/assets/9d20a898-2f22-423d-bba1-10c90cb86e31" />
   <img width="1862" height="850" alt="image" src="https://github.com/user-attachments/assets/6d6e591a-2fc9-4d97-a3e1-858a3f4fcb80" />
   <img width="1920" height="1824" alt="screencapture-file-C-Users-D-ortenzio-Downloads-scuolamappa-index-html-2026-06-22-21_50_40" src="https://github.com/user-attachments/assets/808543f1-d50d-499f-bde7-f0912904c477" />
 </p>
