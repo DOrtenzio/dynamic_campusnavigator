@@ -186,7 +186,10 @@ function createBuilding3D(b) {
     const floorGroup = new THREE.Group();
     floorGroup.position.y = (f - 1) * FLOOR_HEIGHT;
 
-    // Floor slab
+    // Floor slab - this is the solid "closed building" volume, shown only
+    // when the building is collapsed (overview). It must NOT stay opaque
+    // once we are looking inside a floor, otherwise it visually seals the
+    // rooms under a grey haze (this was the main bug).
     const baseMat = new THREE.MeshStandardMaterial({
       color: color,
       roughness: 0.6,
@@ -204,21 +207,38 @@ function createBuilding3D(b) {
     slab.userData = { type: 'shell', floor: f };
     floorGroup.add(slab);
 
-    // Floor outline (dark line)
-    const lineMat = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, roughness: 0.9 });
+    // Thin floor base (the actual walkable slab at the bottom of the floor),
+    // always visible so each floor still reads as a solid plane to stand on.
+    const baseSlabMat = new THREE.MeshStandardMaterial({ color: 0xEDE7DA, roughness: 0.85 });
+    const baseSlabMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(b.w, 0.08, b.d),
+      baseSlabMat
+    );
+    baseSlabMesh.position.y = 0.04;
+    baseSlabMesh.receiveShadow = true;
+    floorGroup.add(baseSlabMesh);
+
+    // Floor outline (dark line at ceiling height) - only meaningful when
+    // the shell is opaque (collapsed view), so it's hidden together with it.
+    const lineMat = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, roughness: 0.9, transparent: true, opacity: 1 });
     const outline = new THREE.Mesh(
       new THREE.BoxGeometry(b.w + 0.04, 0.04, b.d + 0.04),
       lineMat
     );
     outline.position.y = FLOOR_HEIGHT;
+    outline.userData = { type: 'shellDetail' };
     floorGroup.add(outline);
 
-    // Windows (warm glow)
+    // Windows (warm glow) - also part of the closed shell, hidden indoors.
+    const windowGroup = new THREE.Group();
+    windowGroup.name = 'windows';
     const windowMat = new THREE.MeshStandardMaterial({
       color: 0xFFE082,
       roughness: 0.2,
       emissive: 0xFFB300,
-      emissiveIntensity: 0.2
+      emissiveIntensity: 0.2,
+      transparent: true,
+      opacity: 1
     });
     const windowCols = Math.max(2, Math.floor(b.w / 1.3));
     const winW = 0.4, winH = 0.7;
@@ -226,11 +246,12 @@ function createBuilding3D(b) {
       const offsetX = b.x - b.w/2 + (c + 0.5) * (b.w / windowCols);
       const winFront = new THREE.Mesh(new THREE.BoxGeometry(winW, winH, 0.03), windowMat);
       winFront.position.set(offsetX - b.x, FLOOR_HEIGHT/2, b.d/2 + 0.01);
-      floorGroup.add(winFront);
+      windowGroup.add(winFront);
       const winBack = winFront.clone();
       winBack.position.z = -b.d/2 - 0.01;
-      floorGroup.add(winBack);
+      windowGroup.add(winBack);
     }
+    floorGroup.add(windowGroup);
 
     // Rooms group
     const roomsGroup = new THREE.Group();
@@ -480,22 +501,37 @@ function explodeBuilding(bldId, activeFloor) {
   for (let f = 1; f <= m.floorsCount; f++) {
     const fg = m.floorGroups[f - 1];
     const shellMesh = fg.children.find(c => c.userData?.type === 'shell');
+    const outlineMesh = fg.children.find(c => c.userData?.type === 'shellDetail');
+    const windowsGroup = fg.children.find(c => c.name === 'windows');
     const roomsGroup = fg.children.find(c => c.name === 'rooms');
     let targetY = (f - 1) * FLOOR_HEIGHT;
     if (f > activeFloor) {
+      // Floors above the active one: lifted away, shown as light "ghost" slabs
       targetY = (f - 1) * FLOOR_HEIGHT + (f - activeFloor) * spacing;
-      shellMesh.material.opacity = 0.15;
+      shellMesh.visible = true;
+      shellMesh.material.opacity = 0.25;
       shellMesh.material.color.setHex(0xCCCCCC);
+      if (outlineMesh) outlineMesh.visible = true;
+      if (windowsGroup) windowsGroup.visible = true;
       if (roomsGroup) roomsGroup.visible = false;
     } else if (f === activeFloor) {
+      // The floor we're actually looking inside: the closed shell, its roof
+      // outline and windows must be fully hidden, or they sit as an opaque
+      // layer on top of the rooms and make them unreadable.
       targetY = (f - 1) * FLOOR_HEIGHT;
-      shellMesh.material.opacity = 0.05;
-      shellMesh.material.color.set(m.baseColor);
+      shellMesh.visible = false;
+      if (outlineMesh) outlineMesh.visible = false;
+      if (windowsGroup) windowsGroup.visible = false;
       if (roomsGroup) roomsGroup.visible = true;
     } else {
+      // Floors below: dropped down, shown as solid colored slabs (no need
+      // to see their rooms, just that the building continues downward)
       targetY = (f - 1) * FLOOR_HEIGHT - (activeFloor - f) * 1.5;
-      shellMesh.material.opacity = 0.15;
+      shellMesh.visible = true;
+      shellMesh.material.opacity = 0.85;
       shellMesh.material.color.set(m.baseColor);
+      if (outlineMesh) outlineMesh.visible = true;
+      if (windowsGroup) windowsGroup.visible = true;
       if (roomsGroup) roomsGroup.visible = false;
     }
     fg.userData.targetY = targetY;
@@ -511,9 +547,14 @@ function collapseBuilding(bldId) {
     const fg = m.floorGroups[f - 1];
     fg.userData.targetY = (f - 1) * FLOOR_HEIGHT;
     const shellMesh = fg.children.find(c => c.userData?.type === 'shell');
+    const outlineMesh = fg.children.find(c => c.userData?.type === 'shellDetail');
+    const windowsGroup = fg.children.find(c => c.name === 'windows');
     const roomsGroup = fg.children.find(c => c.name === 'rooms');
+    shellMesh.visible = true;
     shellMesh.material.opacity = 1.0;
     shellMesh.material.color.set(m.baseColor);
+    if (outlineMesh) outlineMesh.visible = true;
+    if (windowsGroup) windowsGroup.visible = true;
     if (roomsGroup) roomsGroup.visible = false;
   }
   m.roofGroup.userData.targetY = m.floorsCount * FLOOR_HEIGHT;
@@ -526,36 +567,43 @@ function collapseBuilding(bldId) {
 function draw3DNavigationPath(startObj, endRoom) {
   while (pathGroup.children.length > 0) pathGroup.remove(pathGroup.children[0]);
 
-  if (!startObj || !endRoom) return;
+  if (!startObj || !endRoom) return null;
 
   const points = [];
   let startPos = new THREE.Vector3(0, 0.1, 0);
   let startBldId = 'A';
+  let startLabel = 'Punto di partenza';
   if (startObj.type === 'room') {
     const startRoom = ROOMS.find(r => r.id === startObj.id);
     if (startRoom) {
       startPos.set(startRoom.x, startRoom.floor * FLOOR_HEIGHT - 0.2, startRoom.z);
       startBldId = startRoom.building;
+      startLabel = startRoom.name;
     }
   } else if (startObj.type === 'entrance') {
     const bld = BUILDINGS.find(b => b.id === startObj.id.toUpperCase());
     if (bld) {
       startPos.set(bld.x, 0.1, bld.z + bld.d/2 + 0.5);
       startBldId = bld.id;
+      startLabel = 'Ingresso ' + bld.name;
     } else {
       startPos.set(0, 0.1, 3.5);
       startBldId = 'A';
+      startLabel = 'Ingresso principale';
     }
   }
   points.push(startPos.clone());
 
   const endBldId = endRoom.building;
+  const endBldData = BUILDINGS.find(b => b.id === endBldId);
+  const startBldData = BUILDINGS.find(b => b.id === startBldId);
   const sameBuilding = (startBldId === endBldId);
+  let viaCorridor = null;
 
   if (!sameBuilding) {
     const startGround = new THREE.Vector3(startPos.x, 0.15, startPos.z);
     points.push(startGround);
-    const startBld = BUILDINGS.find(b => b.id === startBldId);
+    const startBld = startBldData;
     const startDoor = new THREE.Vector3(startBld.x, 0.1, startBld.z + startBld.d/2 + 0.3);
     points.push(startDoor);
     const wpStart = WAYPOINTS[startBldId] || new THREE.Vector3(startBld.x, 0.1, startBld.z);
@@ -563,16 +611,19 @@ function draw3DNavigationPath(startObj, endRoom) {
 
     if ((startBldId === 'B' && endBldId === 'C') || (startBldId === 'C' && endBldId === 'B')) {
       points.push(WAYPOINTS['CORRIDOR_CENTER'].clone());
+      viaCorridor = 'il corridoio centrale';
     } else if (startBldId === 'GYM1' && endBldId === 'C') {
       points.push(WAYPOINTS['CORRIDOR_WEST'].clone());
       points.push(WAYPOINTS['CORRIDOR_CENTER'].clone());
+      viaCorridor = 'il corridoio ovest e poi quello centrale';
     } else if (startBldId === 'GYM2' && endBldId === 'B') {
       points.push(WAYPOINTS['CORRIDOR_EAST'].clone());
       points.push(WAYPOINTS['CORRIDOR_CENTER'].clone());
+      viaCorridor = 'il corridoio est e poi quello centrale';
     }
     const wpEnd = WAYPOINTS[endBldId] || new THREE.Vector3(endRoom.x, 0.1, endRoom.z);
     points.push(wpEnd.clone());
-    const endBld = BUILDINGS.find(b => b.id === endBldId);
+    const endBld = endBldData;
     const endDoor = new THREE.Vector3(endBld.x, 0.1, endBld.z + endBld.d/2 + 0.3);
     points.push(endDoor);
     const endGround = new THREE.Vector3(endRoom.x, 0.15, endRoom.z);
@@ -583,6 +634,12 @@ function draw3DNavigationPath(startObj, endRoom) {
   }
   const endPos = new THREE.Vector3(endRoom.x, endRoom.floor * FLOOR_HEIGHT - 0.2, endRoom.z);
   points.push(endPos);
+
+  // Total path length, computed from the *real* route points (not from the
+  // camera's current look-at, which changes every time the user drags/zooms -
+  // that was why the previous distance/time readout was meaningless).
+  let totalLength = 0;
+  for (let i = 1; i < points.length; i++) totalLength += points[i].distanceTo(points[i - 1]);
 
   // Create a smooth curve
   const curve = new THREE.CatmullRomCurve3(points);
@@ -620,6 +677,47 @@ function draw3DNavigationPath(startObj, endRoom) {
 
   targetLookAt.copy(startPos);
   targetZoom = 2.0;
+
+  return {
+    totalLength,
+    sameBuilding,
+    startLabel,
+    startBldId,
+    startBldData,
+    endBldId,
+    endBldData,
+    viaCorridor,
+    endRoom
+  };
+}
+
+/**
+ * Turns a route (as returned by draw3DNavigationPath) into a short list of
+ * plain-Italian steps, so the user gets actual directions instead of having
+ * to interpret a 3D line by eye.
+ */
+function buildNavigationSteps(route) {
+  if (!route) return [];
+  const steps = [];
+  const destLabel = route.endRoom.name;
+  const destFloor = route.endRoom.floor;
+
+  if (route.sameBuilding) {
+    steps.push(`Sei già in ${route.endBldData.name}: non serve uscire.`);
+    if (destFloor && destFloor !== 0) {
+      steps.push(`Raggiungi il piano ${destFloor} tramite le scale più vicine.`);
+    }
+    steps.push(`Segui la linea tratteggiata fino a "${destLabel}".`);
+  } else {
+    steps.push(`Esci da ${route.startLabel}.`);
+    steps.push(`Dirigiti verso ${route.endBldData.name}${route.viaCorridor ? ', passando per ' + route.viaCorridor : ''}.`);
+    steps.push(`Entra in ${route.endBldData.name}.`);
+    if (destFloor && destFloor !== 0) {
+      steps.push(`Sali al piano ${destFloor} tramite le scale.`);
+    }
+    steps.push(`Segui la linea tratteggiata fino a "${destLabel}".`);
+  }
+  return steps;
 }
 
 function clear3DNavigationPath() {
@@ -777,13 +875,19 @@ function animate() {
   }
 
   // Project room labels
+  // IMPORTANT: this used to rebuild labelsContainer.innerHTML from scratch
+  // on every single animation frame (60x per second). That destroyed and
+  // recreated every label <div> constantly, so a tap could land on a node
+  // that got replaced mid-click and the click event was lost. Fix: keep one
+  // persistent <div> per room (created once, cached by id) and just move it
+  // every frame; only add/remove nodes when the visible set of rooms changes.
   const labelsContainer = document.getElementById('roomLabelsContainer');
   if (labelsContainer) {
     if (activeIndoorBuilding) {
       const m = buildingMeshes[activeIndoorBuilding];
       const fg = m.floorGroups[activeIndoorFloor - 1];
       const roomsGroup = fg.children.find(c => c.name === 'rooms');
-      let html = '';
+      const seenIds = new Set();
       if (roomsGroup && roomsGroup.visible) {
         const canvas = renderer.domElement;
         roomsGroup.children.forEach(roomMesh => {
@@ -794,9 +898,9 @@ function animate() {
               const worldPos = new THREE.Vector3();
               roomMesh.getWorldPosition(worldPos);
               worldPos.project(camera);
-              const x = (worldPos.x * 0.5 + 0.5) * canvas.clientWidth;
-              const y = (worldPos.y * -0.5 + 0.5) * canvas.clientHeight;
               if (worldPos.z <= 1) {
+                const x = (worldPos.x * 0.5 + 0.5) * canvas.clientWidth;
+                const y = (worldPos.y * -0.5 + 0.5) * canvas.clientHeight;
                 let labelText = room.id;
                 if (room.id.endsWith('SC')) labelText = 'Scale 🛗';
                 else if (room.id.endsWith('WC')) labelText = 'Bagno 🚻';
@@ -805,15 +909,33 @@ function animate() {
                 else if (room.id === 'MENSA') labelText = 'Mensa 🍽️';
                 else if (room.id === 'LAB-INFO') labelText = 'Lab Info 💻';
                 else if (room.id === 'LAB-SCI') labelText = 'Lab Scienze 🔬';
-                html += `<div class="room-label" style="left:${x}px; top:${y}px;" onclick="openRoom('${room.id}')">${labelText}</div>`;
+
+                seenIds.add(roomId);
+                let el = labelsContainer.querySelector(`[data-room-id="${roomId}"]`);
+                if (!el) {
+                  el = document.createElement('div');
+                  el.className = 'room-label';
+                  el.dataset.roomId = roomId;
+                  // Single stable listener per node, attached once at creation -
+                  // never re-attached, so it can't be dropped mid-frame.
+                  el.addEventListener('click', () => openRoom(roomId));
+                  labelsContainer.appendChild(el);
+                }
+                if (el.textContent !== labelText) el.textContent = labelText;
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                el.style.display = 'block';
               }
             }
           }
         });
       }
-      labelsContainer.innerHTML = html;
+      // Remove/hide labels for rooms no longer visible this frame
+      labelsContainer.querySelectorAll('.room-label').forEach(el => {
+        if (!seenIds.has(el.dataset.roomId)) el.remove();
+      });
     } else {
-      labelsContainer.innerHTML = '';
+      if (labelsContainer.children.length) labelsContainer.innerHTML = '';
     }
   }
 

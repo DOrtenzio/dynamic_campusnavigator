@@ -550,13 +550,32 @@ function startNavigation3D() {
   const bld = BUILDINGS.find(b => b.id === room.building);
   document.getElementById('navDestName').textContent = room.name;
   document.getElementById('navDestBld').textContent = `${bld.name} · Piano ${room.floor}`;
-  const distance = Math.round(Math.sqrt((room.x - currentLookAt.x) * (room.x - currentLookAt.x) + (room.z - currentLookAt.z) * (room.z - currentLookAt.z)) * 2.8);
+
+  // Draw the path AND get back the real route data (length, building hops),
+  // instead of estimating distance from the camera's current look-at point,
+  // which drifts every time the user drags or zooms and made the previous
+  // distance/time numbers meaningless.
+  const route = draw3DNavigationPath(state.startPlace, room);
+  const distance = route ? Math.round(route.totalLength * 2.8) : 0;
   document.getElementById('navDestDist').textContent = distance + ' metri';
-  document.getElementById('navDestTime').textContent = Math.max(1, Math.round(distance / 55)) + ' min';
+  document.getElementById('navDestTime').textContent = Math.max(1, Math.round(distance / 70)) + ' min';
+
+  // Plain-language steps, so the route isn't something the user has to
+  // decode by staring at a line on the 3D map.
+  const steps = buildNavigationSteps(route);
+  const stepsEl = document.getElementById('navDestSteps');
+  if (stepsEl) {
+    stepsEl.innerHTML = steps.map((s, i) => `
+      <div class="nav-step">
+        <span class="nav-step-num">${i + 1}</span>
+        <span class="nav-step-text">${s}</span>
+      </div>
+    `).join('');
+  }
+
   state.navigationActive = true;
   document.getElementById('navigationCard').style.display = 'block';
-  draw3DNavigationPath(state.startPlace, room);
-  showToast('Mappa incentrata sulla partenza. Traccia il percorso a mano.');
+  showToast('Navigazione avviata');
 }
 
 function exitNavigation3D() {
@@ -578,9 +597,6 @@ function navigateTo(roomId) {
   }, 300);
 }
 
-/* =========================================================
-   INITIALIZATION
-   ========================================================= */
 
 window.addEventListener('load', () => {
   renderEntranceList();

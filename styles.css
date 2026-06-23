@@ -1,7 +1,3 @@
-/* =========================================================
-   Navi^FROM^gate — CLAYMORPHIC LIGHT SAND THEME
-   ========================================================= */
-
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 * {
@@ -1225,6 +1221,42 @@ html, body {
   background: var(--accent-primary);
   color: #FFFFFF;
   border-color: var(--accent-primary);
+}
+
+/* Plain-language step-by-step directions inside the navigation card */
+.nav-steps {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nav-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.nav-step-num {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: #FFFFFF;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-step-text {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text-dark);
+  padding-top: 1px;
 }
 
 /* Map legend */
