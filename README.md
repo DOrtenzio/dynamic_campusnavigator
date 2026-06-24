@@ -21,13 +21,11 @@
 </p>
 
 <p>
-  <a href="https://github.com/yourusername/navifromgate/issues">Report Bug</a>
+  <a href="https://github.com/DOrtenzio/dynamic_campusnavigator/issues">Report Bug</a>
   ·
-  <a href="https://github.com/yourusername/navifromgate/issues">Request Feature</a>
+  <a href="https://github.com/DOrtenzio/dynamic_campusnavigator/issues">Request Feature</a>
   ·
-  <a href="https://github.com/yourusername/navifromgate/discussions">Discussions</a>
-  ·
-  <a href="https://github.com/yourusername/navifromgate/wiki">Documentation</a>
+  <a href="https://github.com/DOrtenzio/dynamic_campusnavigator/discussions">Discussions</a>
 </p>
 
 </div>
