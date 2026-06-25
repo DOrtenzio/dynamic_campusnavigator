@@ -2,19 +2,31 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const rateLimit = require('express-rate-limit'); 
 const authMiddleware = require('./utils/authMiddleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const frontendDir = path.join(__dirname, '../frontend');
 
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
 
-// Public auth
-app.use('/api/login', require('./routes/auth'));
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 10, 
+  message: { 
+    status: 429, 
+    error: "Troppi tentativi di login. Riprova tra 15 minuti." 
+  },
+  standardHeaders: true, 
+  legacyHeaders: false, 
+});
 
-// Public read-only API for the main app
+app.use('/api/login', loginLimiter, require('./routes/auth'));
+
 app.get('/api/buildings', (req, res) => {
   const { readDB } = require('./utils/db');
   res.json(readDB().buildings);
@@ -55,14 +67,12 @@ app.get('/api/schedule/:classId', (req, res) => {
   res.json(schedule[req.params.classId] || {});
 });
 
-// Protected write routes (admin panel)
 app.use('/api/teachers', authMiddleware, require('./routes/teachers'));
 app.use('/api/rooms', authMiddleware, require('./routes/rooms'));
 app.use('/api/buildings', authMiddleware, require('./routes/buildings'));
 app.use('/api/schedule', authMiddleware, require('./routes/schedule'));
 app.use('/api/csv', authMiddleware, require('./routes/csv'));
 
-// Frontend static assets
 app.use(express.static(frontendDir));
 
 app.listen(PORT, () => {

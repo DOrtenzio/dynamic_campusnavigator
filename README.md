@@ -76,11 +76,10 @@ Copy `backend/.env.example` to `backend/.env`:
 |----------|-------------|
 | `PORT` | Server port (default `3000`) |
 | `ADMIN_PSK` | Pre-shared key for admin login |
-| `ADMIN_DEMO_CODE` | Optional static auth code for demos |
 | `TOTP_SECRET` | Base32 secret for speakeasy TOTP |
 | `JWT_SECRET` | JWT signing key |
 
-**Demo credentials:** PSK `admin123`, Auth `ADMIN-2024-DEMO`
+**Demo credentials:** PSK `admin123`, Auth (TOTP_SECRET) `JBSWY3DPEHPK3PXP`
 
 ## Setup
 
@@ -108,7 +107,6 @@ npm run dev
 docker build -t campus-navigator .
 docker run -p 3000:3000 \
   -e ADMIN_PSK=admin123 \
-  -e ADMIN_DEMO_CODE=ADMIN-2024-DEMO \
   -e JWT_SECRET=change-me \
   -e TOTP_SECRET=JBSWY3DPEHPK3PXP \
   campus-navigator
@@ -120,7 +118,6 @@ Mount a volume on `/app/backend/data` to persist `db.json` between container res
 
 - Single container: the Dockerfile bundles frontend + backend
 - Set strong values for `JWT_SECRET`, `ADMIN_PSK`, and `TOTP_SECRET` in production
-- Remove or unset `ADMIN_DEMO_CODE` in production
 - Back up `backend/data/db.json` regularly
 
 ## License

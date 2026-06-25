@@ -126,7 +126,3 @@ const initialData = {
 };
 
 writeDB(initialData);
-console.log('✅ Database popolato con i dati del frontend.');
-console.log(`🏢 Edifici: ${BUILDINGS.length}`);
-console.log(`🏠 Aule: ${ROOMS.length}`);
-console.log(`👨‍🏫 Professori: ${TEACHERS.length}`);

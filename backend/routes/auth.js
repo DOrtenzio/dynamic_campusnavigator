@@ -6,9 +6,7 @@ const router = express.Router();
 router.post('/', (req, res) => {
   const { psk, totp } = req.body;
   const validPsk = psk === process.env.ADMIN_PSK;
-  const demoCode = process.env.ADMIN_DEMO_CODE;
-  const validTotp = verifyTOTP(process.env.TOTP_SECRET, totp) ||
-    (demoCode && String(totp).trim().toUpperCase() === demoCode.toUpperCase());
+  const validTotp = verifyTOTP(process.env.TOTP_SECRET, totp);
 
   if (!validPsk || !validTotp) {
     return res.status(401).json({ error: 'Credenziali non valide' });

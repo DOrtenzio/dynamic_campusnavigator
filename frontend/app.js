@@ -1,4 +1,3 @@
-// ---- STATO GLOBALE ----
 const state = {
   startPlace: null,
   currentTab: 'home',
@@ -11,20 +10,17 @@ const state = {
   navigationActive: false
 };
 
-// ---- DATI (caricati dal backend) ----
 let BUILDINGS = [];
 let ROOMS = [];
 let TEACHERS = [];
 let CLASSES = [];
 
-// ---- COSTANTI (definite qui, non più in data.js) ----
 const DEPARTMENTS = ['Lettere','Scientifico','Lingue','Arte','Motoria','Tecnologico'];
 const ROOM_TYPES = ['class','lab','office','special'];
-const DAY_NAMES = ['LUN','MAR','MER','GIO','VEN'];
+const DAY_NAMES = ['MON','TUE','WED','THU','FRI'];
 const HOURS = ['8:00–9:00','9:00–10:00','10:00–11:00','11:00–12:00','12:00–13:00','13:00–14:00'];
 const SUBJECTS = ['Italiano','Matematica','Inglese','Storia','Geografia','Scienze','Fisica','Chimica','Filosofia','Arte','Musica','Diritto','Economia','Informatica','Latino','Greco','Religione'];
 
-// ---- ICONS (definiti qui, non più in data.js) ----
 const ICONS = {
   class: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="21" x2="9" y2="9"/><line x1="15" y1="21" x2="15" y2="15"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="15" x2="15" y2="15"/></svg>`,
   lab: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.7 18.3l3.5-3.5M21 21l-3.5-3.5M10.5 7.5L5.3 12.7c-.4.4-.4 1 0 1.4l4.6 4.6c.4.4 1 .4 1.4 0l5.2-5.2m-6-6L14.7 3.3c.4-.4 1-.4 1.4 0l4.6 4.6c.4.4.4 1 0 1.4L15.5 14.5m-5-7l5 5"/></svg>`,
@@ -39,7 +35,6 @@ const ICONS = {
   field: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="10"/><line x1="2" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="4"/></svg>`
 };
 
-// ---- API HELPER ----
 const API_BASE = '/api';
 
 globalThis.ENTRANCE_BUILDING_MAP ??= {
@@ -61,22 +56,21 @@ function resolveEntranceBuildingId(entranceId) {
 
 function getEntranceLabel(entranceId) {
   const labels = {
-    main: 'Ingresso principale',
-    back: 'Ingresso secondario',
-    gym: 'Ingresso palestre',
-    field: 'Ingresso campo',
-    d: 'Ingresso Palazzina D'
+    main: 'Main entrance',
+    back: 'Secondary entrance',
+    gym: 'Gym entrance',
+    field: 'Field entrance',
+    d: 'Building D entrance'
   };
-  return labels[String(entranceId).toLowerCase()] || 'Ingresso';
+  return labels[String(entranceId).toLowerCase()] || 'Entrance';
 }
 
 async function apiGet(endpoint) {
   const res = await fetch(`${API_BASE}${endpoint}`);
-  if (!res.ok) throw new Error(`Errore API: ${res.status}`);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 }
 
-// ---- CARICAMENTO DATI DAL BACKEND ----
 let SCHEDULE = {};
 
 async function loadDataFromBackend() {
@@ -93,49 +87,24 @@ async function loadDataFromBackend() {
     TEACHERS = teachers;
     SCHEDULE = schedule || {};
     
-    // Genera CLASSES da ROOMS
     generateClassesFromRooms();
     
-    console.log(`✅ Caricati: ${BUILDINGS.length} edifici, ${ROOMS.length} aule, ${TEACHERS.length} professori, ${CLASSES.length} classi`);
     return true;
   } catch (err) {
-    console.error('❌ Errore caricamento dati dal backend:', err);
-    showToast('Errore nel caricamento dei dati. Verifica che il backend sia in esecuzione.');
-    // Carica dati di fallback (solo per sviluppo)
-    loadFallbackData();
+    showToast('Error loading data. Please check that the backend is running.');
     return false;
   }
 }
 
-// ---- FALLBACK (solo per sviluppo, se il backend non è disponibile) ----
-function loadFallbackData() {
-  // Dati minimi per non far crashare l'app
-  BUILDINGS = [
-    { id: 'A', name: 'Palazzina A', subtitle: 'Sede centrale', color: '#FF7E67', floors: 4, rooms: 120, x: 0, z: 0, w: 12, d: 6, icon: 'main' },
-    { id: 'B', name: 'Palazzina B', subtitle: 'Scientifica', color: '#58A4B0', floors: 3, rooms: 80, x: -18, z: 0, w: 8, d: 6, icon: 'wing' }
-  ];
-  ROOMS = [
-    { id: 'A-101', name: 'Aula A-101', building: 'A', floor: 1, type: 'class', subject: 'Matematica', x: 0, z: 0, w: 2, d: 2, color: 0x93B5C6 },
-    { id: 'B-201', name: 'Aula B-201', building: 'B', floor: 2, type: 'class', subject: 'Fisica', x: -18, z: 0, w: 2, d: 2, color: 0x93B5C6 }
-  ];
-  TEACHERS = [
-    { id: 'T1', name: 'Prof. Mario Rossi', firstName: 'Mario', lastName: 'Rossi', department: 'Scientifico', subject: 'Matematica', building: 'A', floor: 1, office: 'A-101' }
-  ];
-  generateClassesFromRooms();
-}
-
-// ---- GENERA CLASSI DA ROOMS ----
 function generateClassesFromRooms() {
-  // Prendi tutte le aule che sono classi
   const classRooms = ROOMS.filter(r => r.type === 'class');
   CLASSES = classRooms.map(r => {
-    // Cerca di estrarre anno e sezione dal nome o ID
     const match = r.id.match(/([A-Z])-(\d)(\d{2})/);
     if (match) {
       const building = match[1];
       const year = parseInt(match[2]);
       const sectionNum = parseInt(match[3]);
-      const section = String.fromCharCode(64 + sectionNum); // 1->A, 2->B, ecc.
+      const section = String.fromCharCode(64 + sectionNum);
       return {
         id: `${year}${section}`,
         year: year,
@@ -149,11 +118,10 @@ function generateClassesFromRooms() {
     return null;
   }).filter(c => c);
   
-  // Se non ci sono classi, genera classi di esempio
   if (CLASSES.length === 0) {
     for (let year = 1; year <= 5; year++) {
       for (let s = 0; s < 3; s++) {
-        const section = String.fromCharCode(65 + s); // A, B, C
+        const section = String.fromCharCode(65 + s);
         CLASSES.push({
           id: `${year}${section}`,
           year: year,
@@ -168,7 +136,6 @@ function generateClassesFromRooms() {
   }
 }
 
-// ---- UTILITY FUNCTIONS ----
 function showScreen(id) {
   document.querySelectorAll('#appLayout .screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -204,18 +171,14 @@ function showToast(msg) {
   }
 }
 
-// ============================================================
-// ONBOARDING
-// ============================================================
-
 function renderEntranceList(filter = '') {
   const q = filter.toLowerCase().trim();
   const entrances = [
-    { id: 'main', name: 'Ingresso principale', desc: 'Via Galilei, 1 — Palazzina A', icon: 'entrance' },
-    { id: 'back', name: 'Ingresso secondario', desc: 'Lato giardino — Palazzina B', icon: 'entrance' },
-    { id: 'gym', name: 'Ingresso palestre', desc: 'Via dello Sport — Palestra 1', icon: 'entrance' },
-    { id: 'field', name: 'Ingresso campo', desc: 'Lato sud — Campo da calcio', icon: 'entrance' },
-    { id: 'd', name: 'Ingresso Palazzina D', desc: 'Via delle Arti', icon: 'entrance' },
+    { id: 'main', name: 'Main entrance', desc: 'Via Galilei, 1 — Building A', icon: 'entrance' },
+    { id: 'back', name: 'Secondary entrance', desc: 'Garden side — Building B', icon: 'entrance' },
+    { id: 'gym', name: 'Gym entrance', desc: 'Via dello Sport — Gym 1', icon: 'entrance' },
+    { id: 'field', name: 'Field entrance', desc: 'South side — Soccer field', icon: 'entrance' },
+    { id: 'd', name: 'Building D entrance', desc: 'Via delle Arti', icon: 'entrance' },
   ].filter(e => !q || e.name.toLowerCase().includes(q) || e.desc.toLowerCase().includes(q));
   
   document.getElementById('entranceList').innerHTML = entrances.map(e => `
@@ -248,7 +211,7 @@ function renderPlaceList(filter = '') {
           <div class="list-name">${r.name}</div>
           <div class="list-meta">
             <span class="tag" style="background:${color}">${r.building}</span>
-            Piano ${r.floor} · ${r.subject || 'Generico'}
+            Floor ${r.floor} · ${r.subject || 'Generic'}
           </div>
         </div>
         <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div>
@@ -269,10 +232,10 @@ function renderOnbClassList(filter = '') {
       <div class="list-item" data-type="class" data-id="${c.id}">
         <div class="list-icon" style="background:${color}">${ICONS.classGroup}</div>
         <div class="list-info">
-          <div class="list-name">Classe ${c.name}</div>
+          <div class="list-name">Class ${c.name}</div>
           <div class="list-meta">
             <span class="tag" style="background:${color}">${c.building}</span>
-            ${c.students || 0} studenti · Aula ${c.classroom}
+            ${c.students || 0} students · Room ${c.classroom}
           </div>
         </div>
         <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div>
@@ -293,7 +256,6 @@ function attachOnboardingListeners(listId) {
   });
 }
 
-// ---- Onboarding Tabs ----
 document.querySelectorAll('#onboarding .tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('#onboarding .tab').forEach(t => t.classList.remove('active'));
@@ -317,12 +279,12 @@ function finishOnboarding() {
   document.getElementById('onboarding').classList.remove('active');
   document.getElementById('appLayout').style.display = 'flex';
   
-  let startLabel = 'Ingresso Principale';
+  let startLabel = 'Main Entrance';
   if (state.startPlace.type === 'room') {
     const room = ROOMS.find(r => r.id === state.startPlace.id);
-    startLabel = room ? room.name : `Aula ${state.startPlace.id}`;
+    startLabel = room ? room.name : `Room ${state.startPlace.id}`;
   } else if (state.startPlace.type === 'class') {
-    startLabel = `Classe ${state.startPlace.id}`;
+    startLabel = `Class ${state.startPlace.id}`;
   } else if (state.startPlace.type === 'entrance') {
     startLabel = getEntranceLabel(state.startPlace.id);
   }
@@ -339,19 +301,15 @@ function finishOnboarding() {
   if (mapInitialized && typeof createStartMarker === 'function') {
     createStartMarker();
   }
-  showToast('Configurazione salvata');
+  showToast('Configuration saved');
 }
 
 function updateGreetingDate() {
-  const dayss = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
-  const months = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  const dayss = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const d = new Date();
   document.getElementById('greetingDate').textContent = `${dayss[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
 }
-
-// ============================================================
-// HOME CONTENT
-// ============================================================
 
 function renderBuildingsGrid() {
   document.getElementById('buildingsGrid').innerHTML = BUILDINGS.map(b => `
@@ -360,7 +318,7 @@ function renderBuildingsGrid() {
       <div class="bld-name">${b.name}</div>
       <div class="bld-meta">
         <span>${b.subtitle || ''}</span> · 
-        <span>${b.rooms || 0} aule</span>
+        <span>${b.rooms || 0} rooms</span>
       </div>
     </div>
   `).join('');
@@ -382,17 +340,16 @@ function renderPopular() {
     return {
       id: r.id,
       name: r.name,
-      meta: `${bld?.name || r.building} · Piano ${r.floor}`,
+      meta: `${bld?.name || r.building} · Floor ${r.floor}`,
       color: bld?.color || '#D4A373',
       icon: r.type || 'special'
     };
   });
   
-  // Se non ci sono stanze popolari, mostra alcune di default
   if (popular.length === 0) {
     popular.push(
-      { id: 'A-101', name: 'Aula A-101', meta: 'Palazzina A · Piano 1', color: '#FF7E67', icon: 'class' },
-      { id: 'B-201', name: 'Aula B-201', meta: 'Palazzina B · Piano 2', color: '#58A4B0', icon: 'class' }
+      { id: 'A-101', name: 'Room A-101', meta: 'Building A · Floor 1', color: '#FF7E67', icon: 'class' },
+      { id: 'B-201', name: 'Room B-201', meta: 'Building B · Floor 2', color: '#58A4B0', icon: 'class' }
     );
   }
   
@@ -407,10 +364,6 @@ function renderPopular() {
     </div>
   `).join('');
 }
-
-// ============================================================
-// AUTOCOMPLETE SEARCH
-// ============================================================
 
 function openSearch() {
   document.getElementById('searchModal').classList.add('open');
@@ -436,7 +389,7 @@ function renderSearchResults(query) {
   
   if (!q) {
     html = `
-      <div class="search-category">Ricerche Frequenti</div>
+      <div class="search-category">Frequent Searches</div>
       ${ROOMS.slice(0, 3).map(r => {
         const bld = BUILDINGS.find(b => b.id === r.building);
         return `
@@ -444,13 +397,13 @@ function renderSearchResults(query) {
             <div class="result-icon" style="background:${bld?.color || '#D4A373'}">${ICONS[r.type] || ICONS.class}</div>
             <div class="result-info">
               <div class="result-name">${r.name}</div>
-              <div class="result-meta">${bld?.name || r.building} · Piano ${r.floor}</div>
+              <div class="result-meta">${bld?.name || r.building} · Floor ${r.floor}</div>
             </div>
           </div>
         `;
       }).join('')}
       <div style="text-align:center;padding:32px 20px;color:var(--text-medium);font-size:13px;line-height:1.4">
-        Cerca <b> aule</b>, <b> professori</b> e <b> classi</b>.
+        Search for <b>rooms</b>, <b>teachers</b> and <b>classes</b>.
       </div>
     `;
   } else {
@@ -459,49 +412,49 @@ function renderSearchResults(query) {
     const classes = CLASSES.filter(c => c.id.toLowerCase().includes(q) || c.name.toLowerCase().includes(q)).slice(0, 6);
     
     if (rooms.length) {
-      html += `<div class="search-category">Aule e Laboratori (${rooms.length})</div>`;
+      html += `<div class="search-category">Rooms & Labs (${rooms.length})</div>`;
       html += rooms.map(r => {
         const bld = BUILDINGS.find(b => b.id === r.building);
         return `<div class="result-item" onclick="selectSearchResult('room','${r.id}')">
           <div class="result-icon" style="background:${bld?.color || '#D4A373'}">${ICONS[r.type] || ICONS.class}</div>
           <div class="result-info">
             <div class="result-name">${r.name}</div>
-            <div class="result-meta"><span class="tag" style="background:${bld?.color || '#D4A373'}">${r.building}</span> Piano ${r.floor} · ${r.subject || 'Generico'}</div>
+            <div class="result-meta"><span class="tag" style="background:${bld?.color || '#D4A373'}">${r.building}</span> Floor ${r.floor} · ${r.subject || 'Generic'}</div>
           </div>
         </div>`;
       }).join('');
     }
     
     if (teachers.length) {
-      html += `<div class="search-category">Professori (${teachers.length})</div>`;
+      html += `<div class="search-category">Teachers (${teachers.length})</div>`;
       html += teachers.map(t => {
         const bld = BUILDINGS.find(b => b.id === t.building);
         return `<div class="result-item" onclick="selectSearchResult('teacher','${t.id}')">
           <div class="result-icon" style="background:var(--accent-terracotta)">${ICONS.teacher}</div>
           <div class="result-info">
             <div class="result-name">${t.name}</div>
-            <div class="result-meta"><span class="tag" style="background:${bld?.color || '#D4A373'}">${t.office || t.building}</span> Materia: ${t.subject || 'Generico'}</div>
+            <div class="result-meta"><span class="tag" style="background:${bld?.color || '#D4A373'}">${t.office || t.building}</span> Subject: ${t.subject || 'Generic'}</div>
           </div>
         </div>`;
       }).join('');
     }
     
     if (classes.length) {
-      html += `<div class="search-category">Classi (${classes.length})</div>`;
+      html += `<div class="search-category">Classes (${classes.length})</div>`;
       html += classes.map(c => {
         const bld = BUILDINGS.find(b => b.id === c.building);
         return `<div class="result-item" onclick="selectSearchResult('class','${c.id}')">
           <div class="result-icon" style="background:${bld?.color || '#D4A373'}">${ICONS.classGroup}</div>
           <div class="result-info">
-            <div class="result-name">Classe ${c.name}</div>
-            <div class="result-meta"><span class="tag" style="background:${bld?.color || '#D4A373'}">${c.classroom}</span> Edificio ${c.building} · ${c.students || 0} alunni</div>
+            <div class="result-name">Class ${c.name}</div>
+            <div class="result-meta"><span class="tag" style="background:${bld?.color || '#D4A373'}">${c.classroom}</span> Building ${c.building} · ${c.students || 0} students</div>
           </div>
         </div>`;
       }).join('');
     }
     
     if (!html) {
-      html = `<div style="text-align:center;padding:40px 20px;color:var(--text-medium)"><div style="font-size:14px">Nessun risultato corrispondente a "${query}"</div></div>`;
+      html = `<div style="text-align:center;padding:40px 20px;color:var(--text-medium)"><div style="font-size:13px">No results found for "${query}"</div></div>`;
     }
   }
   document.getElementById('searchResults').innerHTML = html;
@@ -515,30 +468,26 @@ function selectSearchResult(type, id) {
       const teacher = TEACHERS.find(t => t.id === id);
       if (teacher && teacher.office) {
         openRoom(teacher.office);
-        showToast(`Ufficio del ${teacher.name}`);
+        showToast(`Office of ${teacher.name}`);
       } else {
-        showToast('Professore trovato ma senza ufficio');
+        showToast('Teacher found but no office');
       }
     } else if (type === 'class') {
       const cls = CLASSES.find(c => c.id === id);
       if (cls && cls.classroom) {
         openRoom(cls.classroom);
-        showToast(`Aula della classe ${cls.name}`);
+        showToast(`Classroom of ${cls.name}`);
       } else {
-        showToast('Classe trovata ma senza aula');
+        showToast('Class found but no classroom');
       }
     }
   }, 200);
 }
 
-// ============================================================
-// ROOMS EXPLORE
-// ============================================================
-
 function renderRoomFilters() {
   const buildings = ['all', ...BUILDINGS.filter(b => b.floors > 0).map(b => b.id)];
   const bldHtml = buildings.map(b => {
-    const label = b === 'all' ? 'Tutti gli edifici' : BUILDINGS.find(x => x.id === b)?.name || b;
+    const label = b === 'all' ? 'All buildings' : BUILDINGS.find(x => x.id === b)?.name || b;
     const count = b === 'all' ? ROOMS.length : ROOMS.filter(r => r.building === b).length;
     return `<button class="filter-chip ${state.filters.rooms.building === b ? 'active' : ''}" onclick="setRoomFilter('building','${b}')">${label} <span class="count">${count}</span></button>`;
   }).join('');
@@ -570,7 +519,7 @@ function renderRoomsList() {
   const grouped = {};
   filtered.forEach(r => { if (!grouped[r.building]) grouped[r.building] = []; grouped[r.building].push(r); });
   
-  let html = `<div class="results-summary"><span>${filtered.length} aule trovate</span></div>`;
+  let html = `<div class="results-summary"><span>${filtered.length} rooms found</span></div>`;
   Object.entries(grouped).forEach(([bldId, rooms]) => {
     const bld = BUILDINGS.find(b => b.id === bldId);
     const color = bld?.color || '#D4A373';
@@ -580,30 +529,26 @@ function renderRoomsList() {
         <div class="result-icon" style="background:${color}">${ICONS[r.type] || ICONS.class}</div>
         <div class="result-info">
           <div class="result-name">${r.name} <span class="tag" style="background:${color}">${r.id}</span></div>
-          <div class="result-meta">Piano ${r.floor} · ${r.subject || 'Generico'}</div>
+          <div class="result-meta">Floor ${r.floor} · ${r.subject || 'Generic'}</div>
         </div>
         <div class="result-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7"/></svg></div>
       </div>
     `).join('');
     if (rooms.length > 20) {
-      html += `<div style="text-align:center;padding:12px;color:var(--text-medium);font-size:12px">+ altre ${rooms.length - 20} aule</div>`;
+      html += `<div style="text-align:center;padding:12px;color:var(--text-medium);font-size:12px">+ ${rooms.length - 20} more rooms</div>`;
     }
   });
   
   if (!filtered.length) {
-    html = `<div style="text-align:center;padding:40px 20px;color:var(--text-medium)"><div style="font-size:13px">Nessuna aula corrisponde ai filtri</div></div>`;
+    html = `<div style="text-align:center;padding:40px 20px;color:var(--text-medium)"><div style="font-size:13px">No rooms match the filters</div></div>`;
   }
   document.getElementById('roomsList').innerHTML = html;
 }
 
-// ============================================================
-// TEACHERS EXPLORE
-// ============================================================
-
 function renderTeacherFilters() {
   const depts = ['all', ...DEPARTMENTS];
   const html = depts.map(d => {
-    const label = d === 'all' ? 'Tutti i dipartimenti' : d;
+    const label = d === 'all' ? 'All departments' : d;
     const count = d === 'all' ? TEACHERS.length : TEACHERS.filter(t => t.department === d).length;
     return `<button class="filter-chip ${state.filters.teachers.department === d ? 'active' : ''}" onclick="setTeacherFilter('${d}')">${label} <span class="count">${count}</span></button>`;
   }).join('');
@@ -637,7 +582,7 @@ function renderTeachersList() {
   const grouped = {};
   filtered.forEach(t => { const letter = (t.lastName || t.name)[0]; if (!grouped[letter]) grouped[letter] = []; grouped[letter].push(t); });
   
-  let html = `<div class="results-summary"><span>${filtered.length} professori trovati</span></div>`;
+  let html = `<div class="results-summary"><span>${filtered.length} teachers found</span></div>`;
   Object.entries(grouped).forEach(([letter, teachers]) => {
     html += `<div class="group-header">${letter} <span class="group-count">${teachers.length}</span></div>`;
     html += teachers.map(t => {
@@ -648,7 +593,7 @@ function renderTeachersList() {
           <div class="result-icon" style="background:var(--accent-terracotta)">${ICONS.teacher}</div>
           <div class="result-info">
             <div class="result-name">${t.name}</div>
-            <div class="result-meta"><span class="tag" style="background:${color}">${t.office || t.building}</span> Dipartimento: ${t.department} · ${t.subject || 'Generico'}</div>
+            <div class="result-meta"><span class="tag" style="background:${color}">${t.office || t.building}</span> Department: ${t.department} · ${t.subject || 'Generic'}</div>
           </div>
           <div class="result-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7"/></svg></div>
         </div>
@@ -657,19 +602,15 @@ function renderTeachersList() {
   });
   
   if (!filtered.length) {
-    html = `<div style="text-align:center;padding:40px 20px;color:var(--text-medium)"><div style="font-size:13px">Nessun docente corrisponde alla ricerca</div></div>`;
+    html = `<div style="text-align:center;padding:40px 20px;color:var(--text-medium)"><div style="font-size:13px">No teachers found</div></div>`;
   }
   document.getElementById('teachersList').innerHTML = html;
 }
 
-// ============================================================
-// CLASSES EXPLORE
-// ============================================================
-
 function renderClassFilters() {
   const years = ['all', 1, 2, 3, 4, 5];
   const html = years.map(y => {
-    const label = y === 'all' ? 'Tutti gli anni' : `${y}° Anno`;
+    const label = y === 'all' ? 'All years' : `${y}° Year`;
     const count = y === 'all' ? CLASSES.length : CLASSES.filter(c => c.year === y).length;
     return `<button class="filter-chip ${state.filters.classes.year === y ? 'active' : ''}" onclick="setClassFilter(${y === 'all' ? "'all'" : y})">${label} <span class="count">${count}</span></button>`;
   }).join('');
@@ -701,9 +642,9 @@ function renderClassesList() {
   const grouped = {};
   filtered.forEach(c => { if (!grouped[c.year]) grouped[c.year] = []; grouped[c.year].push(c); });
   
-  let html = `<div class="results-summary"><span>${filtered.length} classi trovate</span></div>`;
+  let html = `<div class="results-summary"><span>${filtered.length} classes found</span></div>`;
   Object.entries(grouped).sort((a,b) => a[0]-b[0]).forEach(([year, classes]) => {
-    html += `<div class="group-header">${year}° anno <span class="group-count">${classes.length}</span></div>`;
+    html += `<div class="group-header">${year}° year <span class="group-count">${classes.length}</span></div>`;
     html += classes.map(c => {
       const bld = BUILDINGS.find(b => b.id === c.building);
       const color = bld?.color || '#D4A373';
@@ -711,8 +652,8 @@ function renderClassesList() {
         <div class="clay-card result-item" onclick="openRoom('${c.classroom}')">
           <div class="result-icon" style="background:${color}">${ICONS.classGroup}</div>
           <div class="result-info">
-            <div class="result-name">Classe ${c.name}</div>
-            <div class="result-meta"><span class="tag" style="background:${color}">${c.classroom}</span> ${c.students || 0} studenti · Edificio ${c.building}</div>
+            <div class="result-name">Class ${c.name}</div>
+            <div class="result-meta"><span class="tag" style="background:${color}">${c.classroom}</span> ${c.students || 0} students · Building ${c.building}</div>
           </div>
           <div class="result-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7"/></svg></div>
         </div>
@@ -721,18 +662,14 @@ function renderClassesList() {
   });
   
   if (!filtered.length) {
-    html = `<div style="text-align:center;padding:40px 20px;color:var(--text-medium)"><div style="font-size:13px">Nessuna classe trovata</div></div>`;
+    html = `<div style="text-align:center;padding:40px 20px;color:var(--text-medium)"><div style="font-size:13px">No classes found</div></div>`;
   }
   document.getElementById('classesList').innerHTML = html;
 }
 
-// ============================================================
-// DETAILS BOTTOM SHEET
-// ============================================================
-
 function openRoom(roomId) {
   const room = ROOMS.find(r => r.id === roomId);
-  if (!room) { showToast('Aula non trovata'); return; }
+  if (!room) { showToast('Room not found'); return; }
   
   state.selectedRoom = room;
   const bld = BUILDINGS.find(b => b.id === room.building);
@@ -741,11 +678,11 @@ function openRoom(roomId) {
   document.getElementById('sheetTitle').textContent = room.name;
   document.getElementById('sheetBld').textContent = bld?.name || room.building;
   document.getElementById('sheetBld').style.background = color;
-  document.getElementById('sheetFloor').textContent = 'Piano ' + room.floor;
+  document.getElementById('sheetFloor').textContent = 'Floor ' + room.floor;
   
-  let descText = room.subject || 'Materia principale: ' + (room.subject || 'Generico');
-  if (room.id.endsWith('SC')) descText = 'Vano scale antincendio / Ascensori di collegamento tra i piani.';
-  else if (room.id.endsWith('WC')) descText = 'Servizi igienici di piano dell\'edificio.';
+  let descText = room.subject || 'Main subject: ' + (room.subject || 'Generic');
+  if (room.id.endsWith('SC')) descText = 'Stairwell / Elevator connecting floors.';
+  else if (room.id.endsWith('WC')) descText = 'Restroom on this floor.';
   document.getElementById('sheetSubject').textContent = descText;
   
   document.getElementById('sheetIcon').style.background = color;
@@ -764,10 +701,6 @@ function closeSheet() {
   document.getElementById('roomSheet').classList.remove('open');
 }
 
-// ============================================================
-// 3D NAVIGATION CONTROLS
-// ============================================================
-
 function startNavigation3D() {
   if (!state.selectedRoom) return;
   closeSheet();
@@ -776,12 +709,11 @@ function startNavigation3D() {
   const bld = BUILDINGS.find(b => b.id === room.building);
   
   document.getElementById('navDestName').textContent = room.name;
-  document.getElementById('navDestBld').textContent = `${bld?.name || room.building} · Piano ${room.floor}`;
+  document.getElementById('navDestBld').textContent = `${bld?.name || room.building} · Floor ${room.floor}`;
 
-  // Draw the path
   const route = draw3DNavigationPath(state.startPlace, room);
   const distance = route ? Math.round(route.totalLength * 2.8) : 0;
-  document.getElementById('navDestDist').textContent = distance + ' metri';
+  document.getElementById('navDestDist').textContent = distance + ' meters';
   document.getElementById('navDestTime').textContent = Math.max(1, Math.round(distance / 70)) + ' min';
 
   const steps = buildNavigationSteps(route);
@@ -797,7 +729,7 @@ function startNavigation3D() {
 
   state.navigationActive = true;
   document.getElementById('navigationCard').style.display = 'block';
-  showToast('Navigazione avviata');
+  showToast('Navigation started');
 }
 
 function exitNavigation3D() {
@@ -805,7 +737,7 @@ function exitNavigation3D() {
   document.getElementById('navigationCard').style.display = 'none';
   clear3DNavigationPath();
   resetMapView();
-  showToast('Navigazione terminata');
+  showToast('Navigation ended');
 }
 
 function navigateTo(roomId) {
@@ -819,11 +751,6 @@ function navigateTo(roomId) {
   }, 300);
 }
 
-// ============================================================
-// INITIALIZATION
-// ============================================================
-
-// Event listeners per navigation
 document.querySelectorAll('.nav-item').forEach(item => {
   if (item.dataset.tab) item.addEventListener('click', () => switchTab(item.dataset.tab));
 });
@@ -831,7 +758,6 @@ document.querySelectorAll('.side-item').forEach(item => {
   if (item.dataset.tab) item.addEventListener('click', () => switchTab(item.dataset.tab));
 });
 
-// Gestione touch
 let lastTouchEnd = 0;
 document.addEventListener('touchend', (e) => {
   const now = Date.now();
@@ -839,15 +765,10 @@ document.addEventListener('touchend', (e) => {
   lastTouchEnd = now;
 }, false);
 
-// ---- AVVIO APP ----
 window.addEventListener('load', async () => {
-  // Carica dati dal backend
   await loadDataFromBackend();
   
-  // Renderizza onboarding
   renderEntranceList();
   renderPlaceList();
   renderOnbClassList();
-  
-  console.log('🚀 Navi^FROM^gate avviato!');
 });

@@ -1,8 +1,3 @@
-/* ========================================================
-   ADMIN PANEL — Navi^FROM^gate
-   ======================================================== */
-
-/* Modal */
 .admin-modal {
   position: absolute;
   top: 50%;
@@ -465,7 +460,6 @@
 .admin-page-btn:hover { background: #F0EBE3; }
 .admin-page-btn.active { background: #D4A373; color: #fff; border-color: #D4A373; }
 
-/* Color picker preview */
 .color-preview {
   width: 32px;
   height: 32px;
@@ -475,10 +469,125 @@
   flex-shrink: 0;
 }
 
-/* Responsive */
 @media (max-width: 640px) {
   .admin-sidebar { width: 48px; }
   .admin-nav-btn span { display: none; }
   .admin-map-editor { grid-template-columns: 1fr; }
   .admin-map-list { display: none; }
+}
+
+.admin-map2d-wrap {
+  position: relative;
+  background: #faf7f2;
+  border: 1.5px solid #E0D8CE;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.admin-map2d-svg {
+  display: block;
+  width: 100%;
+  height: 260px;
+}
+
+.admin-map2d-legend {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  color: #666;
+  font-family: 'Outfit', sans-serif;
+}
+
+.admin-map2d-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 3px;
+  vertical-align: middle;
+}
+
+/* ── Mappa 2D aule ── */
+.admin-room-map-wrap {
+  background: #f5f0e8;
+  border: 1.5px solid #E0D8CE;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.admin-room-map-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #E0D8CE;
+  font-size: 13px;
+  font-family: 'Outfit', sans-serif;
+  background: #faf7f2;
+}
+
+.admin-room-map-toolbar select {
+  border: 1px solid #E0D8CE;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 13px;
+  background: #fff;
+}
+
+.admin-room-map-svg {
+  display: block;
+  width: 100%;
+  height: 220px;
+}
+
+/* ── Style picker architettonico ── */
+.admin-style-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.admin-style-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 12px;
+  border: 1.5px solid #E0D8CE;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #fff;
+  transition: all 0.15s;
+  min-width: 72px;
+  font-family: 'Outfit', sans-serif;
+}
+
+.admin-style-opt:hover {
+  border-color: #aaa;
+  background: #faf7f2;
+}
+
+.admin-style-opt.selected {
+  border-color: #D4A373;
+  background: #FFF8EE;
+  box-shadow: 0 0 0 2px #D4A37344;
+}
+
+.admin-style-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.admin-style-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+  text-align: center;
 }
