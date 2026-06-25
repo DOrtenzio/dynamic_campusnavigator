@@ -1,10 +1,3 @@
-/* ========================================================
-   ADMIN PANEL — Navi^FROM^gate (Backend-enabled)
-   PSK + TOTP login, CRUD via API, persistenza su backend
-   ======================================================== */
-
-// ── API HELPER ──────────────────────────────────────────────
-const API_BASE = '/api';
 let adminToken = localStorage.getItem('adminToken');
 let adminTeachers = [];
 let adminRooms = [];
@@ -551,8 +544,6 @@ async function exportRoomsCSV() {
   }
 }
 
-// ── SCHEDULE ──────────────────────────────────────────────
-const HOURS = ['8:00–9:00','9:00–10:00','10:00–11:00','11:00–12:00','12:00–13:00','13:00–14:00'];
 const DAYS = ['LUN','MAR','MER','GIO','VEN'];
 const SCHEDULE_COLORS = {
   'Italiano':'#FF7E67','Matematica':'#58A4B0','Inglese':'#FC642D','Storia':'#9C89B8',

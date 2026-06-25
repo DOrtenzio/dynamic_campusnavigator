@@ -42,14 +42,13 @@ const ICONS = {
 // ---- API HELPER ----
 const API_BASE = '/api';
 
-if(!ENTRANCE_BUILDING_MAP)
-  let ENTRANCE_BUILDING_MAP = {
-    main: 'A',
-    back: 'B',
-    gym: 'GYM1',
-    field: 'FIELD',
-    d: 'D'
-  };
+globalThis.ENTRANCE_BUILDING_MAP ??= {
+  main: 'A',
+  back: 'B',
+  gym: 'GYM1',
+  field: 'FIELD',
+  d: 'D'
+};
 
 function resolveEntranceBuildingId(entranceId) {
   if (!entranceId) return 'A';
@@ -344,10 +343,10 @@ function finishOnboarding() {
 }
 
 function updateGreetingDate() {
-  const days = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+  const dayss = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
   const months = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
   const d = new Date();
-  document.getElementById('greetingDate').textContent = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
+  document.getElementById('greetingDate').textContent = `${dayss[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
 }
 
 // ============================================================
