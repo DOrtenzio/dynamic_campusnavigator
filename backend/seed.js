@@ -8,7 +8,7 @@ const BUILDINGS = [
   { id: 'D', name: 'Palazzina D', subtitle: 'Artistica', color: '#9C89B8', floors: 2, rooms: 40, x: 0, z: -16, w: 10, d: 5, icon: 'wing' },
   { id: 'GYM1', name: 'Palestra 1', subtitle: 'Coperta', color: '#E8A87C', floors: 1, rooms: 4, x: -18, z: 14, w: 7, d: 5, icon: 'gym' },
   { id: 'GYM2', name: 'Palestra 2', subtitle: 'Coperta', color: '#E8A87C', floors: 1, rooms: 3, x: 18, z: 14, w: 7, d: 5, icon: 'gym' },
-  { id: 'FIELD', name: 'Campo da calcio', subtitle: 'Esterno', color: '#88B04B', floors: 0, rooms: 1, x: 0, z: 18, w: 16, d: 10, icon: 'field' },
+  { id: 'FIELD', name: 'Campo da calcio', subtitle: 'Esterno', color: '#88B04B', floors: 1, rooms: 1, x: 0, z: 18, w: 16, d: 10, icon: 'field' },
 ];
 
 const ROOMS = [];
@@ -70,10 +70,10 @@ function generateRooms() {
     }
   });
 
-  // Speciali fissi
-  ROOMS.push({ id: 'LIB', name: 'Biblioteca', building: 'A', floor: 0, type: 'special', subject: 'Studio', x: -3, z: 2, w: 3, d: 2, color: 0x9C89B8 });
-  ROOMS.push({ id: 'AUD', name: 'Auditorium', building: 'A', floor: 0, type: 'special', subject: 'Eventi', x: 3, z: 2, w: 4, d: 2, color: 0xFC642D });
-  ROOMS.push({ id: 'MENSA', name: 'Mensa', building: 'A', floor: 0, type: 'special', subject: 'Pranzo', x: -8, z: 2, w: 4, d: 2, color: 0x58A4B0 });
+  // Special rooms on ground floor (piano 1)
+  ROOMS.push({ id: 'LIB', name: 'Biblioteca', building: 'A', floor: 1, type: 'special', subject: 'Studio', x: -4, z: 1.5, w: 2.5, d: 2, color: 0x9C89B8 });
+  ROOMS.push({ id: 'AUD', name: 'Auditorium', building: 'A', floor: 1, type: 'special', subject: 'Eventi', x: 3.5, z: 1.5, w: 3, d: 2, color: 0xFC642D });
+  ROOMS.push({ id: 'MENSA', name: 'Mensa', building: 'A', floor: 1, type: 'special', subject: 'Pranzo', x: 0, z: -1.5, w: 3, d: 2, color: 0x58A4B0 });
   ROOMS.push({ id: 'LAB-INFO', name: 'Lab. Informatica', building: 'B', floor: 1, type: 'lab', subject: 'Informatica', x: -20, z: -1, w: 2, d: 2, color: 0x7FA37F });
   ROOMS.push({ id: 'LAB-SCI', name: 'Lab. Scienze', building: 'B', floor: 2, type: 'lab', subject: 'Scienze', x: -17, z: -1, w: 2, d: 2, color: 0x7FA37F });
 }

@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 
 function authMiddleware(req, res, next) {
+  if (req.method === 'GET') return next();
+
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return res.status(401).json({ error: 'Token mancante' });

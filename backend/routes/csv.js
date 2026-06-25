@@ -48,5 +48,48 @@ router.get('/export/teachers', (req, res) => {
   res.send(csvContent);
 });
 
-// Simili per rooms e schedule (puoi estendere)
+router.post('/import/rooms', upload.single('file'), (req, res) => {
+  const results = [];
+  const bufferStream = Readable.from(req.file.buffer.toString());
+  bufferStream
+    .pipe(csv())
+    .on('data', data => results.push(data))
+    .on('end', () => {
+      const db = readDB();
+      results.forEach(row => {
+        const room = {
+          id: row.ID || `R${Date.now()}`,
+          name: row.Nome || row.ID,
+          building: row.Edificio || '',
+          floor: parseInt(row.Piano, 10) || 1,
+          type: row.Tipo || 'class',
+          subject: row.Materia || '',
+          x: parseFloat(row.X) || 0,
+          z: parseFloat(row.Z) || 0,
+          w: parseFloat(row.Larghezza) || 2,
+          d: parseFloat(row.Profondita) || 2,
+          color: parseInt(row.Colore, 16) || 0x93B5C6
+        };
+        const existing = db.rooms.findIndex(r => r.id === room.id);
+        if (existing >= 0) db.rooms[existing] = room;
+        else db.rooms.push(room);
+      });
+      writeDB(db);
+      res.json({ imported: results.length });
+    });
+});
+
+router.get('/export/rooms', (req, res) => {
+  const db = readDB();
+  const headers = ['ID', 'Nome', 'Edificio', 'Piano', 'Tipo', 'Materia', 'X', 'Z', 'Larghezza', 'Profondita', 'Colore'];
+  const rows = db.rooms.map(r => [
+    r.id, r.name, r.building, r.floor, r.type, r.subject || '',
+    r.x, r.z, r.w, r.d, r.color
+  ]);
+  const csvContent = [headers, ...rows].map(r => r.join(',')).join('\n');
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename=aule.csv');
+  res.send(csvContent);
+});
+
 module.exports = router;

@@ -4,6 +4,7 @@
    ======================================================== */
 
 // ── API HELPER ──────────────────────────────────────────────
+const API_BASE = '/api';
 let adminToken = localStorage.getItem('adminToken');
 let adminTeachers = [];
 let adminRooms = [];
@@ -24,7 +25,7 @@ async function apiRequest(method, endpoint, body = null) {
   };
   const options = { method, headers };
   if (body) options.body = JSON.stringify(body);
-  const res = await fetch(`http://localhost:3000/api${endpoint}`, options);
+  const res = await fetch(`${API_BASE}${endpoint}`, options);
   if (!res.ok) {
     const error = await res.json();
     throw new Error(error.error || 'Errore API');
@@ -66,7 +67,7 @@ async function submitAdminLogin() {
   const psk = document.getElementById('adminPSK').value.trim();
   const totp = document.getElementById('adminAuthCode').value.trim();
   try {
-    const res = await fetch('http://localhost:3000/api/login', {
+    const res = await fetch(`${API_BASE}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ psk, totp })
@@ -335,7 +336,7 @@ async function confirmDeleteTeacher(id) {
 
 async function exportTeachersCSV() {
   try {
-    const res = await fetch('http://localhost:3000/api/csv/export/teachers', {
+    const res = await fetch(`${API_BASE}/csv/export/teachers`, {
       headers: { 'Authorization': `Bearer ${adminToken}` }
     });
     const blob = await res.blob();
@@ -535,7 +536,7 @@ async function confirmDeleteRoom(id) {
 
 async function exportRoomsCSV() {
   try {
-    const res = await fetch('http://localhost:3000/api/csv/export/rooms', {
+    const res = await fetch(`${API_BASE}/csv/export/rooms`, {
       headers: { 'Authorization': `Bearer ${adminToken}` }
     });
     const blob = await res.blob();
@@ -1171,7 +1172,7 @@ function downloadTemplate(type, template, example) {
 async function exportAllSchedulesCSV() {
   // Esporta tutti gli orari dal backend
   try {
-    const res = await fetch('http://localhost:3000/api/schedule', {
+    const res = await fetch(`${API_BASE}/schedule`, {
       headers: { 'Authorization': `Bearer ${adminToken}` }
     });
     const schedule = await res.json();

@@ -1,10 +1,11 @@
 const speakeasy = require('speakeasy');
 
 function verifyTOTP(secret, token) {
+  if (!secret || !token) return false;
   return speakeasy.totp.verify({
-    secret: secret,
+    secret,
     encoding: 'base32',
-    token: token,
+    token: String(token).replace(/\s/g, ''),
     window: 1
   });
 }

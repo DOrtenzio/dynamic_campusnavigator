@@ -1,7 +1,3 @@
-// ============================================================
-// APP.JS — Navi^FROM^gate con Backend
-// ============================================================
-
 // ---- STATO GLOBALE ----
 const state = {
   startPlace: null,
@@ -44,7 +40,36 @@ const ICONS = {
 };
 
 // ---- API HELPER ----
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = '/api';
+
+if(!ENTRANCE_BUILDING_MAP)
+  let ENTRANCE_BUILDING_MAP = {
+    main: 'A',
+    back: 'B',
+    gym: 'GYM1',
+    field: 'FIELD',
+    d: 'D'
+  };
+
+function resolveEntranceBuildingId(entranceId) {
+  if (!entranceId) return 'A';
+  const key = String(entranceId).toLowerCase();
+  if (ENTRANCE_BUILDING_MAP[key]) return ENTRANCE_BUILDING_MAP[key];
+  const upper = String(entranceId).toUpperCase();
+  if (BUILDINGS.find(b => b.id === upper)) return upper;
+  return 'A';
+}
+
+function getEntranceLabel(entranceId) {
+  const labels = {
+    main: 'Ingresso principale',
+    back: 'Ingresso secondario',
+    gym: 'Ingresso palestre',
+    field: 'Ingresso campo',
+    d: 'Ingresso Palazzina D'
+  };
+  return labels[String(entranceId).toLowerCase()] || 'Ingresso';
+}
 
 async function apiGet(endpoint) {
   const res = await fetch(`${API_BASE}${endpoint}`);
@@ -53,6 +78,8 @@ async function apiGet(endpoint) {
 }
 
 // ---- CARICAMENTO DATI DAL BACKEND ----
+let SCHEDULE = {};
+
 async function loadDataFromBackend() {
   try {
     const [buildings, rooms, teachers, schedule] = await Promise.all([
@@ -65,6 +92,7 @@ async function loadDataFromBackend() {
     BUILDINGS = buildings;
     ROOMS = rooms;
     TEACHERS = teachers;
+    SCHEDULE = schedule || {};
     
     // Genera CLASSES da ROOMS
     generateClassesFromRooms();
@@ -296,8 +324,8 @@ function finishOnboarding() {
     startLabel = room ? room.name : `Aula ${state.startPlace.id}`;
   } else if (state.startPlace.type === 'class') {
     startLabel = `Classe ${state.startPlace.id}`;
-  } else if (state.startPlace.id === 'back') {
-    startLabel = 'Ingresso Secondario';
+  } else if (state.startPlace.type === 'entrance') {
+    startLabel = getEntranceLabel(state.startPlace.id);
   }
   document.getElementById('startPlaceText').textContent = startLabel;
   

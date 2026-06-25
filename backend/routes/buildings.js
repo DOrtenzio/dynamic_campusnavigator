@@ -33,7 +33,12 @@ router.put('/:id', (req, res) => {
 
 router.delete('/:id', (req, res) => {
   const db = readDB();
-  db.buildings = db.buildings.filter(b => b.id !== req.params.id);
+  const id = req.params.id;
+  if (!db.buildings.some(b => b.id === id)) {
+    return res.status(404).json({ error: 'Non trovato' });
+  }
+  db.buildings = db.buildings.filter(b => b.id !== id);
+  db.rooms = db.rooms.filter(r => r.building !== id);
   writeDB(db);
   res.status(204).send();
 });

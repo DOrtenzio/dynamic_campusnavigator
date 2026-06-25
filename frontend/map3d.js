@@ -30,6 +30,40 @@ const WAYPOINTS = {
 
 const FLOOR_HEIGHT = 1.6;
 
+const ENTRANCE_BUILDING_MAP = {
+    main: 'A',
+    back: 'B',
+    gym: 'GYM1',
+    field: 'FIELD',
+    d: 'D'
+};
+
+function resolveEntranceBuildingId(entranceId) {
+    if (!entranceId) return 'A';
+    const key = String(entranceId).toLowerCase();
+    if (ENTRANCE_BUILDING_MAP[key]) return ENTRANCE_BUILDING_MAP[key];
+    const upper = String(entranceId).toUpperCase();
+    if (typeof BUILDINGS !== 'undefined' && BUILDINGS.find(b => b.id === upper)) return upper;
+    return 'A';
+}
+
+function clampRoomPosition(relX, relZ, roomW, roomD, buildingW, buildingD) {
+    const maxX = buildingW / 2 - roomW / 2 - 0.12;
+    const maxZ = buildingD / 2 - roomD / 2 - 0.12;
+    return {
+        x: Math.max(-maxX, Math.min(maxX, relX)),
+        z: Math.max(-maxZ, Math.min(maxZ, relZ))
+    };
+}
+
+function applyShellMaterial(shellMesh, opacity, baseColor) {
+    if (!shellMesh || !shellMesh.material) return;
+    shellMesh.material.transparent = opacity < 1;
+    shellMesh.material.opacity = opacity;
+    shellMesh.material.depthWrite = opacity >= 0.45;
+    shellMesh.material.color.set(baseColor);
+}
+
 function initMap() {
     if (mapInitialized) return;
     
@@ -305,7 +339,7 @@ function createBuilding3D(b) {
     const bGroup = new THREE.Group();
     bGroup.userData = { buildingId: b.id };
     const color = new THREE.Color(b.color);
-    const floors = b.floors || 1;
+    const floors = Math.max(1, b.floors || 1);
     const floorGroups = [];
     
     for (let f = 1; f <= floors; f++) {
@@ -356,6 +390,7 @@ function createBuilding3D(b) {
         );
         baseSlabMesh.position.y = 0.04;
         baseSlabMesh.receiveShadow = true;
+        baseSlabMesh.userData = { explodeGroup: 'floorDetail' };
         floorGroup.add(baseSlabMesh);
         
         // Outline
@@ -455,22 +490,22 @@ function createBuilding3D(b) {
         
         const floorRooms = ROOMS.filter(r => r.building === b.id && r.floor === f);
         floorRooms.forEach(r => {
+            const rel = clampRoomPosition(r.x - b.x, r.z - b.z, r.w, r.d, b.w, b.d);
             const roomMat = new THREE.MeshStandardMaterial({
                 color: new THREE.Color(r.color),
                 roughness: 0.5,
                 metalness: 0.1
             });
             const roomMesh = new THREE.Mesh(
-                new THREE.BoxGeometry(r.w, FLOOR_HEIGHT - 0.2, r.d),
+                new THREE.BoxGeometry(r.w, FLOOR_HEIGHT - 0.25, r.d),
                 roomMat
             );
-            roomMesh.position.set(r.x - b.x, (FLOOR_HEIGHT - 0.2)/2 + 0.05, r.z - b.z);
+            roomMesh.position.set(rel.x, (FLOOR_HEIGHT - 0.25) / 2 + 0.08, rel.z);
             roomMesh.castShadow = true;
             roomMesh.receiveShadow = true;
             roomMesh.userData = { type: 'room', roomId: r.id };
             roomsGroup.add(roomMesh);
             
-            // Room outlines
             const wallMat = new THREE.LineBasicMaterial({ color: 0xBBBBBB });
             const points = [
                 new THREE.Vector3(-r.w/2, -0.1, -r.d/2),
@@ -481,49 +516,49 @@ function createBuilding3D(b) {
             ];
             const geometry = new THREE.BufferGeometry().setFromPoints(points);
             const line = new THREE.Line(geometry, wallMat);
-            line.position.set(r.x - b.x, 0.05, r.z - b.z);
+            line.position.set(rel.x, 0.08, rel.z);
+            line.userData = { type: 'roomOutline', roomId: r.id };
             roomsGroup.add(line);
             
-            // Furniture
             if (r.type === 'class' || r.type === 'lab') {
                 const furnitureGroup = new THREE.Group();
                 furnitureGroup.name = 'furniture';
                 
-                // Teacher desk
                 const deskMat = new THREE.MeshStandardMaterial({ 
                     color: 0x8B5A2B, 
                     roughness: 0.8 
                 });
                 const desk = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.6, 0.12, 0.4), 
+                    new THREE.BoxGeometry(Math.min(0.55, r.w * 0.35), 0.1, Math.min(0.35, r.d * 0.25)), 
                     deskMat
                 );
-                desk.position.set(0, 0.06, -r.d/2 + 0.35);
+                desk.position.set(0, 0.05, -r.d/2 + Math.min(0.35, r.d * 0.22));
                 desk.castShadow = true;
                 furnitureGroup.add(desk);
                 
-                // Student benches
                 const benchMat = new THREE.MeshStandardMaterial({ 
                     color: 0xC69C6D, 
                     roughness: 0.7 
                 });
-                const rows = 3, cols = 4;
-                const spacingX = r.w / (cols + 1);
-                const spacingZ = (r.d - 0.8) / (rows + 1);
+                const rows = Math.max(1, Math.min(3, Math.floor((r.d - 0.6) / 0.45)));
+                const cols = Math.max(1, Math.min(4, Math.floor((r.w - 0.4) / 0.45)));
+                const spacingX = (r.w - 0.4) / (cols + 1);
+                const spacingZ = (r.d - 0.7) / (rows + 1);
                 
                 for (let i = 0; i < rows; i++) {
                     for (let j = 0; j < cols; j++) {
-                        const bx = -r.w/2 + (j+1) * spacingX;
-                        const bz = -r.d/2 + 0.4 + (i+1) * spacingZ;
+                        const bx = -r.w/2 + 0.2 + (j + 1) * spacingX;
+                        const bz = -r.d/2 + 0.35 + (i + 1) * spacingZ;
                         const bench = new THREE.Mesh(
-                            new THREE.BoxGeometry(0.3, 0.06, 0.3), 
+                            new THREE.BoxGeometry(0.28, 0.05, 0.28), 
                             benchMat
                         );
-                        bench.position.set(bx, 0.06, bz);
+                        bench.position.set(bx, 0.05, bz);
                         bench.castShadow = true;
                         furnitureGroup.add(bench);
                     }
                 }
+                furnitureGroup.position.set(rel.x, 0, rel.z);
                 roomsGroup.add(furnitureGroup);
             }
         });
@@ -540,6 +575,7 @@ function createBuilding3D(b) {
         );
         corridor.position.set(0, 0.06, 0);
         corridor.receiveShadow = true;
+        corridor.userData = { explodeGroup: 'floorDetail' };
         floorGroup.add(corridor);
 
         lineMat = new THREE.LineBasicMaterial({ color: 0xC4B5A0 });
@@ -551,6 +587,7 @@ function createBuilding3D(b) {
           new THREE.BufferGeometry().setFromPoints(corridorPoints),
           lineMat
         );
+        corridorLine1.userData = { explodeGroup: 'floorDetail' };
         floorGroup.add(corridorLine1);
 
         const corridorPoints2 = [
@@ -561,28 +598,28 @@ function createBuilding3D(b) {
           new THREE.BufferGeometry().setFromPoints(corridorPoints2),
           lineMat
         );
+        corridorLine2.userData = { explodeGroup: 'floorDetail' };
         floorGroup.add(corridorLine2);
 
-        const hasStairs = ROOMS.some(r => r.building === b.id && r.floor === f && r.id.endsWith('SC'));
-        if (hasStairs || f > 1) {
+        const hasStairsRoom = ROOMS.some(r => r.building === b.id && r.floor === f && r.id.endsWith('SC'));
+        if (!hasStairsRoom && f > 1) {
           const stairMat = new THREE.MeshStandardMaterial({ color: 0x95A5A6 });
           const stairGroup = new THREE.Group();
           
-          for (let step = 0; step < 8; step++) {
+          for (let step = 0; step < 6; step++) {
             const stepMesh = new THREE.Mesh(
-              new THREE.BoxGeometry(0.5, 0.02, 0.25),
+              new THREE.BoxGeometry(0.45, 0.02, 0.22),
               stairMat
             );
             stepMesh.position.set(
-              -b.w/2 + 0.6,
-              step * 0.18,
-              -b.d/2 + 0.8 + (step % 2) * 0.3
+              -b.w/2 + 0.55,
+              step * 0.16,
+              -b.d/2 + 0.75 + (step % 2) * 0.25
             );
             stepMesh.castShadow = true;
             stairGroup.add(stepMesh);
           }
           
-          stairGroup.visible = true;
           floorGroup.add(stairGroup);
         }
 
@@ -597,29 +634,33 @@ function createBuilding3D(b) {
           );
           floorIndicator.rotation.x = -Math.PI/2;
           floorIndicator.position.set(b.w/2 - 0.8, 0.08, b.d/2 - 0.8);
+          floorIndicator.userData = { explodeGroup: 'floorDetail' };
           floorGroup.add(floorIndicator);
         }
         const doorMat = new THREE.MeshStandardMaterial({ color: 0x6B5E4F });
         floorRooms.forEach(r => {
+          if (r.type === 'special' && (r.id.endsWith('SC') || r.id.endsWith('WC'))) return;
+          const rel = clampRoomPosition(r.x - b.x, r.z - b.z, r.w, r.d, b.w, b.d);
           const door = new THREE.Mesh(
-            new THREE.BoxGeometry(0.12, 0.18, 0.6),
+            new THREE.BoxGeometry(0.1, 0.16, 0.45),
             doorMat
           );
-          const doorX = r.x - b.x;
-          const doorZ = r.z - b.z;
+          const doorX = rel.x;
+          const doorZ = rel.z;
           
           if (Math.abs(doorX) < b.w/3) {
             door.position.set(
-              doorX > 0 ? b.w/2 - 0.06 : -b.w/2 + 0.06,
-              0.09,
+              doorX > 0 ? b.w/2 - 0.05 : -b.w/2 + 0.05,
+              0.08,
               doorZ
             );
             door.rotation.y = doorX > 0 ? Math.PI/2 : -Math.PI/2;
           } else {
-            door.position.set(doorX, 0.09, doorZ > 0 ? -b.d/2 + 0.06 : b.d/2 - 0.06);
+            door.position.set(doorX, 0.08, doorZ > 0 ? -b.d/2 + 0.05 : b.d/2 - 0.05);
           }
           
           door.castShadow = true;
+          door.userData = { explodeGroup: 'floorDetail' };
           floorGroup.add(door);
         });
         bGroup.add(floorGroup);
@@ -847,7 +888,8 @@ function getStartPosition() {
         const room = ROOMS.find(r => r.id === state.startPlace.id);
         if (room) pos.set(room.x, room.floor * FLOOR_HEIGHT - 0.2, room.z);
     } else if (state.startPlace.type === 'entrance') {
-        const bld = BUILDINGS.find(b => b.id === state.startPlace.id.toUpperCase());
+        const bldId = resolveEntranceBuildingId(state.startPlace.id);
+        const bld = BUILDINGS.find(b => b.id === bldId);
         if (bld) pos.set(bld.x, 0.1, bld.z + bld.d/2 + 0.5);
         else pos.set(0, 0.1, 3.5);
     }
@@ -941,49 +983,64 @@ function setIndoorFloor(floor) {
 function explodeBuilding(bldId, activeFloor) {
     const m = buildingMeshes[bldId];
     if (!m) return;
-    const spacing = 5.2;
-    
+    const spacing = 4.8;
+
     for (let f = 1; f <= m.floorsCount; f++) {
         const fg = m.floorGroups[f - 1];
-        // 1. Nascondi tutti i figli di default
+        const shellMesh = fg.children.find(c => c.userData?.type === 'shell');
+        const roomsGroup = fg.children.find(c => c.name === 'rooms');
+
         fg.children.forEach(child => {
             child.visible = false;
         });
-        
+
         let targetY;
         if (f > activeFloor) {
-            // Piano superiore: tutto nascosto, solo spostamento
             targetY = (f - 1) * FLOOR_HEIGHT + (f - activeFloor) * spacing;
+            if (shellMesh) {
+                shellMesh.visible = true;
+                applyShellMaterial(shellMesh, 0.16, m.baseColor);
+            }
         } else if (f === activeFloor) {
-            // Piano attivo: mostra solo le stanze
             targetY = (f - 1) * FLOOR_HEIGHT;
-            const roomsGroup = fg.children.find(c => c.name === 'rooms');
+            if (shellMesh) {
+                shellMesh.visible = true;
+                applyShellMaterial(shellMesh, 0.08, m.baseColor);
+            }
             if (roomsGroup) {
                 roomsGroup.visible = true;
                 roomsGroup.children.forEach(child => {
+                    child.visible = true;
                     if (child.isMesh && child.material) {
-                        child.material.transparent = true;
-                        child.material.opacity = 0.95;
+                        child.material.transparent = false;
+                        child.material.opacity = 1;
+                        child.material.depthWrite = true;
                     }
                 });
             }
-        } else { // f < activeFloor
-            // Piano inferiore: mostra solo il guscio con trasparenza
-            targetY = (f - 1) * FLOOR_HEIGHT - (activeFloor - f) * 1.5;
-            const shellMesh = fg.children.find(c => c.userData?.type === 'shell');
+            fg.children.forEach(child => {
+                if (child.userData?.explodeGroup === 'floorDetail') child.visible = true;
+            });
+        } else {
+            targetY = (f - 1) * FLOOR_HEIGHT - (activeFloor - f) * 1.4;
             if (shellMesh) {
                 shellMesh.visible = true;
-                shellMesh.material.transparent = true;
-                shellMesh.material.opacity = 0.85;
-                shellMesh.material.color.set(m.baseColor);
+                applyShellMaterial(shellMesh, 0.26, m.baseColor);
             }
         }
         fg.userData.targetY = targetY;
     }
-    
-    // Gestione del tetto
-    const roofTargetY = m.floorsCount * FLOOR_HEIGHT + (m.floorsCount - activeFloor + 1) * spacing + 1;
+
+    const roofTargetY = m.floorsCount * FLOOR_HEIGHT + Math.max(0, m.floorsCount - activeFloor + 1) * spacing * 0.35;
     m.roofGroup.userData.targetY = roofTargetY;
+    m.roofGroup.visible = activeFloor < m.floorsCount;
+    m.roofGroup.children.forEach(child => {
+        if (child.material) {
+            child.material.transparent = true;
+            child.material.opacity = 0.2;
+            child.material.depthWrite = false;
+        }
+    });
 }
 
 function collapseBuilding(bldId) {
@@ -994,28 +1051,37 @@ function collapseBuilding(bldId) {
         const fg = m.floorGroups[f - 1];
         fg.userData.targetY = (f - 1) * FLOOR_HEIGHT;
         
-        // Ripristina visibilità di tutti i figli
         fg.children.forEach(child => {
             child.visible = true;
         });
         
-        // Ripristina opacità del guscio
         const shellMesh = fg.children.find(c => c.userData?.type === 'shell');
         if (shellMesh) {
-            shellMesh.material.transparent = false;
-            shellMesh.material.opacity = 1.0;
-            shellMesh.material.color.set(m.baseColor);
+            applyShellMaterial(shellMesh, 1, m.baseColor);
         }
         
-        // Nascondi le stanze (roomsGroup)
         const roomsGroup = fg.children.find(c => c.name === 'rooms');
         if (roomsGroup) {
             roomsGroup.visible = false;
+            roomsGroup.children.forEach(child => {
+                if (child.isMesh && child.material) {
+                    child.material.transparent = false;
+                    child.material.opacity = 1;
+                    child.material.depthWrite = true;
+                }
+            });
         }
     }
     
-    // Ripristina posizione del tetto
     m.roofGroup.userData.targetY = m.floorsCount * FLOOR_HEIGHT;
+    m.roofGroup.visible = true;
+    m.roofGroup.children.forEach(child => {
+        if (child.material) {
+            child.material.transparent = false;
+            child.material.opacity = 1;
+            child.material.depthWrite = true;
+        }
+    });
 }
 
 function draw3DNavigationPath(startObj, endRoom) {
@@ -1035,7 +1101,8 @@ function draw3DNavigationPath(startObj, endRoom) {
             startLabel = startRoom.name;
         }
     } else if (startObj.type === 'entrance') {
-        const bld = BUILDINGS.find(b => b.id === startObj.id.toUpperCase());
+        const bldId = resolveEntranceBuildingId(startObj.id);
+        const bld = BUILDINGS.find(b => b.id === bldId);
         if (bld) {
             startPos.set(bld.x, 0.1, bld.z + bld.d/2 + 0.5);
             startBldId = bld.id;
