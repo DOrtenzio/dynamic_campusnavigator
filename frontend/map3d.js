@@ -55,6 +55,20 @@ function clampRoomPosition(relX, relZ, roomW, roomD, buildingW, buildingD) {
     };
 }
 
+function roomToWorld(room, building) {
+  return {
+    x: building.x + room.x,
+    z: building.z + room.z
+  };
+}
+
+function worldToRoom(world, building) {
+  return {
+    x: world.x - building.x,
+    z: world.z - building.z
+  };
+}
+
 function applyShellMaterial(shellMesh, opacity, baseColor) {
     if (!shellMesh || !shellMesh.material) return;
     shellMesh.material.transparent = opacity < 1;
@@ -342,7 +356,7 @@ function createBuilding3D(b) {
     bGroup.userData = { buildingId: b.id };
     const color = new THREE.Color(b.color);
     const floors = Math.max(1, b.floors || 1);
-    
+
     const style = b.icon || 'wing';
     const styleDef = (typeof BUILDING_STYLE_DEFS !== 'undefined' && BUILDING_STYLE_DEFS[style]) || {};
     let roofStyle = 'flat';
@@ -364,7 +378,7 @@ function createBuilding3D(b) {
     let hasOpenPavilion = false;
     let roofTint = null;
     let facadeTint = null;
-    
+
     switch (style) {
         case 'main':
             facadeRoughness = 0.82;
@@ -453,13 +467,13 @@ function createBuilding3D(b) {
         default:
             break;
     }
-    
+
     const floorGroups = [];
-    
+
     if (b.id === 'FIELD') {
         const fieldGroup = new THREE.Group();
         fieldGroup.position.set(b.x, 0, b.z);
-        
+
         const grassMat = new THREE.MeshStandardMaterial({
             color: 0x4CAF50,
             roughness: 0.9,
@@ -472,139 +486,139 @@ function createBuilding3D(b) {
         grass.position.y = 0.05;
         grass.receiveShadow = true;
         fieldGroup.add(grass);
-        
-        const lineMatField = new THREE.MeshStandardMaterial({ 
-            color: 0xFFFFFF, 
+
+        const lineMatField = new THREE.MeshStandardMaterial({
+            color: 0xFFFFFF,
             roughness: 0.9,
             emissive: 0xFFFFFF,
             emissiveIntensity: 0.05
         });
-        
+
         const fieldW = b.w - 2;
         const fieldD = b.d - 2;
-        
+
         const border1 = new THREE.Mesh(
             new THREE.BoxGeometry(fieldW, 0.03, 0.08),
             lineMatField
         );
-        border1.position.set(0, 0.08, -fieldD/2);
+        border1.position.set(0, 0.08, -fieldD / 2);
         fieldGroup.add(border1);
-        
+
         const border2 = border1.clone();
-        border2.position.z = fieldD/2;
+        border2.position.z = fieldD / 2;
         fieldGroup.add(border2);
-        
+
         const border3 = new THREE.Mesh(
             new THREE.BoxGeometry(0.08, 0.03, fieldD),
             lineMatField
         );
-        border3.position.set(-fieldW/2, 0.08, 0);
+        border3.position.set(-fieldW / 2, 0.08, 0);
         fieldGroup.add(border3);
-        
+
         const border4 = border3.clone();
-        border4.position.x = fieldW/2;
+        border4.position.x = fieldW / 2;
         fieldGroup.add(border4);
-        
+
         const centerLine = new THREE.Mesh(
             new THREE.BoxGeometry(0.08, 0.03, fieldD),
             lineMatField
         );
         centerLine.position.set(0, 0.08, 0);
         fieldGroup.add(centerLine);
-        
+
         const centerCircle = new THREE.Mesh(
             new THREE.RingGeometry(1.8, 2.0, 32),
-            new THREE.MeshStandardMaterial({ 
-                color: 0xFFFFFF, 
+            new THREE.MeshStandardMaterial({
+                color: 0xFFFFFF,
                 side: THREE.DoubleSide,
                 emissive: 0xFFFFFF,
                 emissiveIntensity: 0.05
             })
         );
-        centerCircle.rotation.x = -Math.PI/2;
+        centerCircle.rotation.x = -Math.PI / 2;
         centerCircle.position.set(0, 0.085, 0);
         fieldGroup.add(centerCircle);
-        
+
         const penaltyArea1 = new THREE.Mesh(
             new THREE.BoxGeometry(4, 0.03, 0.08),
             lineMatField
         );
-        penaltyArea1.position.set(0, 0.08, -fieldD/2 + 3);
+        penaltyArea1.position.set(0, 0.08, -fieldD / 2 + 3);
         fieldGroup.add(penaltyArea1);
-        
+
         const penaltyArea2 = penaltyArea1.clone();
-        penaltyArea2.position.z = fieldD/2 - 3;
+        penaltyArea2.position.z = fieldD / 2 - 3;
         fieldGroup.add(penaltyArea2);
-        
+
         const goalMat = new THREE.MeshStandardMaterial({
             color: 0xFFFFFF,
             roughness: 0.5,
             metalness: 0.3
         });
-        
+
         const goalDepth = 0.8;
         const goalWidth = 2.4;
         const goalHeight = 0.8;
-        
+
         const goalPositions = [
-            { x: -fieldW/2 - 0.3, z: 0, rot: Math.PI/2 },
-            { x: fieldW/2 + 0.3, z: 0, rot: -Math.PI/2 }
+            { x: -fieldW / 2 - 0.3, z: 0, rot: Math.PI / 2 },
+            { x: fieldW / 2 + 0.3, z: 0, rot: -Math.PI / 2 }
         ];
-        
+
         goalPositions.forEach(gp => {
             const goalGroup = new THREE.Group();
-            
+
             const backBar = new THREE.Mesh(
                 new THREE.BoxGeometry(goalWidth, goalHeight, 0.05),
                 goalMat
             );
-            backBar.position.set(0, goalHeight/2, 0);
+            backBar.position.set(0, goalHeight / 2, 0);
             goalGroup.add(backBar);
-            
+
             const topBar = new THREE.Mesh(
                 new THREE.BoxGeometry(goalWidth, 0.05, goalDepth),
                 goalMat
             );
-            topBar.position.set(0, goalHeight, goalDepth/2);
+            topBar.position.set(0, goalHeight, goalDepth / 2);
             goalGroup.add(topBar);
-            
+
             const leftBar = new THREE.Mesh(
                 new THREE.BoxGeometry(0.05, goalHeight, goalDepth),
                 goalMat
             );
-            leftBar.position.set(-goalWidth/2, goalHeight/2, goalDepth/2);
+            leftBar.position.set(-goalWidth / 2, goalHeight / 2, goalDepth / 2);
             goalGroup.add(leftBar);
-            
+
             const rightBar = leftBar.clone();
-            rightBar.position.x = goalWidth/2;
+            rightBar.position.x = goalWidth / 2;
             goalGroup.add(rightBar);
-            
+
             const netMat = new THREE.MeshStandardMaterial({
                 color: 0xCCCCCC,
                 transparent: true,
                 opacity: 0.3,
                 wireframe: true
             });
-            
+
             const net = new THREE.Mesh(
                 new THREE.BoxGeometry(goalWidth - 0.05, goalHeight - 0.05, goalDepth - 0.05),
                 netMat
             );
-            net.position.set(0, goalHeight/2, goalDepth/2);
+            net.position.set(0, goalHeight / 2, goalDepth / 2);
             goalGroup.add(net);
-            
+
             goalGroup.position.set(gp.x, 0.05, gp.z);
             goalGroup.rotation.y = gp.rot;
             fieldGroup.add(goalGroup);
         });
-        
+
         const cornerFlags = [
-            { x: -fieldW/2 - 0.3, z: -fieldD/2 - 0.3 },
-            { x: fieldW/2 + 0.3, z: -fieldD/2 - 0.3 },
-            { x: -fieldW/2 - 0.3, z: fieldD/2 + 0.3 },
-            { x: fieldW/2 + 0.3, z: fieldD/2 + 0.3 }
+            { x: -fieldW / 2 - 0.3, z: -fieldD / 2 - 0.3 },
+            { x: fieldW / 2 + 0.3, z: -fieldD / 2 - 0.3 },
+            { x: -fieldW / 2 - 0.3, z: fieldD / 2 + 0.3 },
+            { x: fieldW / 2 + 0.3, z: fieldD / 2 + 0.3 }
         ];
-        
+
         cornerFlags.forEach(pos => {
             const flagMat = new THREE.MeshStandardMaterial({ color: 0xFF0000 });
             const flag = new THREE.Mesh(
@@ -614,7 +628,7 @@ function createBuilding3D(b) {
             flag.position.set(pos.x, 0.4, pos.z);
             flag.castShadow = true;
             fieldGroup.add(flag);
-            
+
             const flagPole = new THREE.Mesh(
                 new THREE.BoxGeometry(0.15, 0.1, 0.05),
                 flagMat
@@ -628,42 +642,42 @@ function createBuilding3D(b) {
             roughness: 0.8,
             metalness: 0.1
         });
-        
+
         const standDepth = 3;
         const standHeight = 2;
-        
+
         const standPositions = [
-            { x: 0, z: -fieldD/2 - standDepth/2 - 1, rot: 0 },
-            { x: 0, z: fieldD/2 + standDepth/2 + 1, rot: Math.PI }
+            { x: 0, z: -fieldD / 2 - standDepth / 2 - 1, rot: 0 },
+            { x: 0, z: fieldD / 2 + standDepth / 2 + 1, rot: Math.PI }
         ];
-        
+
         standPositions.forEach(sp => {
             const standGroup = new THREE.Group();
-            
+
             const base = new THREE.Mesh(
                 new THREE.BoxGeometry(fieldW, standHeight, standDepth),
                 standMat
             );
-            base.position.set(0, standHeight/2, 0);
+            base.position.set(0, standHeight / 2, 0);
             base.castShadow = true;
             base.receiveShadow = true;
             standGroup.add(base);
-            
+
             const rows = 5;
             const rowSpacing = standDepth / rows;
             for (let r = 0; r < rows; r++) {
                 const step = new THREE.Mesh(
                     new THREE.BoxGeometry(fieldW - 0.5, 0.15, rowSpacing - 0.1),
-                    new THREE.MeshStandardMaterial({ 
+                    new THREE.MeshStandardMaterial({
                         color: 0x9E9E9E,
-                        roughness: 0.9 
+                        roughness: 0.9
                     })
                 );
-                step.position.set(0, (r + 1) * (standHeight / rows), -standDepth/2 + (r + 0.5) * rowSpacing);
+                step.position.set(0, (r + 1) * (standHeight / rows), -standDepth / 2 + (r + 0.5) * rowSpacing);
                 step.castShadow = true;
                 standGroup.add(step);
             }
-            
+
             const railingMat = new THREE.MeshStandardMaterial({
                 color: 0x666666,
                 metalness: 0.5,
@@ -673,17 +687,17 @@ function createBuilding3D(b) {
                 new THREE.BoxGeometry(fieldW - 0.2, 0.1, 0.05),
                 railingMat
             );
-            railing.position.set(0, standHeight + 0.05, -standDepth/2 + 0.025);
+            railing.position.set(0, standHeight + 0.05, -standDepth / 2 + 0.025);
             standGroup.add(railing);
-            
+
             standGroup.position.set(sp.x, 0, sp.z);
             standGroup.rotation.y = sp.rot;
             fieldGroup.add(standGroup);
         });
-        
+
         campusGroup.add(fieldGroup);
         fieldGroup.rotation.y = degToRad(b.rotation);
-        
+
         buildingMeshes[b.id] = {
             group: fieldGroup,
             floorGroups: [],
@@ -692,14 +706,14 @@ function createBuilding3D(b) {
             baseColor: new THREE.Color(0x4CAF50),
             w: b.w, d: b.d, x: b.x, z: b.z
         };
-        
+
         return fieldGroup;
     }
-    
+
     for (let f = 1; f <= floors; f++) {
         const floorGroup = new THREE.Group();
         floorGroup.position.y = (f - 1) * FLOOR_HEIGHT;
-        
+
         const slabOpacity = hasOpenPavilion ? 0.35 : 1;
         const baseMat = new THREE.MeshStandardMaterial({
             color: baseColor.clone(),
@@ -708,7 +722,7 @@ function createBuilding3D(b) {
             transparent: hasOpenPavilion,
             opacity: slabOpacity
         });
-        
+
         const slab = new THREE.Mesh(
             new THREE.BoxGeometry(b.w, FLOOR_HEIGHT, b.d),
             baseMat
@@ -718,7 +732,7 @@ function createBuilding3D(b) {
         slab.receiveShadow = true;
         slab.userData = { type: 'shell', floor: f };
         floorGroup.add(slab);
-        
+
         if (hasStripe && f % 2 === 0) {
             const stripeMat = new THREE.MeshStandardMaterial({
                 color: 0x6B6B6B,
@@ -731,7 +745,7 @@ function createBuilding3D(b) {
             stripe.position.y = FLOOR_HEIGHT / 2;
             floorGroup.add(stripe);
         }
-        
+
         if (hasCorrugated) {
             const ribMat = new THREE.MeshStandardMaterial({ color: 0x90A4AE, roughness: 0.7, metalness: 0.4 });
             for (let rib = -b.w / 2 + 0.4; rib < b.w / 2; rib += 0.55) {
@@ -774,7 +788,7 @@ function createBuilding3D(b) {
             pedMesh.position.set(0, FLOOR_HEIGHT - 0.05, b.d / 2 + 0.05);
             floorGroup.add(pedMesh);
         }
-        
+
         if (hasColumns) {
             const colMat = new THREE.MeshStandardMaterial({
                 color: baseColor.clone().multiplyScalar(0.9),
@@ -782,22 +796,22 @@ function createBuilding3D(b) {
                 metalness: 0.2
             });
             const colPositions = [
-                [-b.w/2 + 0.3, -b.d/2 + 0.3],
-                [b.w/2 - 0.3, -b.d/2 + 0.3],
-                [-b.w/2 + 0.3, b.d/2 - 0.3],
-                [b.w/2 - 0.3, b.d/2 - 0.3]
+                [-b.w / 2 + 0.3, -b.d / 2 + 0.3],
+                [b.w / 2 - 0.3, -b.d / 2 + 0.3],
+                [-b.w / 2 + 0.3, b.d / 2 - 0.3],
+                [b.w / 2 - 0.3, b.d / 2 - 0.3]
             ];
             colPositions.forEach(([cx, cz]) => {
                 const col = new THREE.Mesh(
                     new THREE.CylinderGeometry(0.15, 0.2, FLOOR_HEIGHT, 8),
                     colMat
                 );
-                col.position.set(cx, FLOOR_HEIGHT/2, cz);
+                col.position.set(cx, FLOOR_HEIGHT / 2, cz);
                 col.castShadow = true;
                 floorGroup.add(col);
             });
         }
-        
+
         if (hasBalcony && f > 1) {
             const balcMat = new THREE.MeshStandardMaterial({
                 color: baseColor.clone().multiplyScalar(1.1),
@@ -807,10 +821,10 @@ function createBuilding3D(b) {
                 new THREE.BoxGeometry(b.w - 1, 0.08, 0.6),
                 balcMat
             );
-            balc.position.set(0, 0.04, b.d/2 + 0.3);
+            balc.position.set(0, 0.04, b.d / 2 + 0.3);
             balc.castShadow = true;
             floorGroup.add(balc);
-            
+
             const railMat = new THREE.MeshStandardMaterial({
                 color: 0x4A4A4A,
                 roughness: 0.5,
@@ -821,11 +835,11 @@ function createBuilding3D(b) {
                     new THREE.BoxGeometry(0.04, 0.02, 0.6),
                     railMat
                 );
-                rail.position.set(-b.w/2 + 0.5 + r * ((b.w - 1) / 3), 0.25, b.d/2 + 0.3);
+                rail.position.set(-b.w / 2 + 0.5 + r * ((b.w - 1) / 3), 0.25, b.d / 2 + 0.3);
                 floorGroup.add(rail);
             }
         }
-        
+
         const corniceMat = new THREE.MeshStandardMaterial({
             color: baseColor.clone().multiplyScalar(0.8),
             roughness: facadeRoughness * 0.8
@@ -837,10 +851,10 @@ function createBuilding3D(b) {
         cornice.position.y = FLOOR_HEIGHT - 0.1;
         cornice.castShadow = true;
         floorGroup.add(cornice);
-        
-        const baseSlabMat = new THREE.MeshStandardMaterial({ 
-            color: 0xEDE7DA, 
-            roughness: 0.85 
+
+        const baseSlabMat = new THREE.MeshStandardMaterial({
+            color: 0xEDE7DA,
+            roughness: 0.85
         });
         const baseSlabMesh = new THREE.Mesh(
             new THREE.BoxGeometry(b.w, 0.08, b.d),
@@ -850,12 +864,12 @@ function createBuilding3D(b) {
         baseSlabMesh.receiveShadow = true;
         baseSlabMesh.userData = { explodeGroup: 'floorDetail' };
         floorGroup.add(baseSlabMesh);
-        
-        let lineMat = new THREE.MeshStandardMaterial({ 
-            color: 0xCCCCCC, 
-            roughness: 0.9, 
-            transparent: true, 
-            opacity: 1 
+
+        let lineMat = new THREE.MeshStandardMaterial({
+            color: 0xCCCCCC,
+            roughness: 0.9,
+            transparent: true,
+            opacity: 1
         });
         const outline = new THREE.Mesh(
             new THREE.BoxGeometry(b.w + 0.04, 0.04, b.d + 0.04),
@@ -864,7 +878,7 @@ function createBuilding3D(b) {
         outline.position.y = FLOOR_HEIGHT;
         outline.userData = { type: 'shellDetail' };
         floorGroup.add(outline);
-        
+
         const windowGroup = new THREE.Group();
         windowGroup.name = 'windows';
         const windowMat = new THREE.MeshStandardMaterial({
@@ -875,10 +889,10 @@ function createBuilding3D(b) {
             transparent: true,
             opacity: 1
         });
-        
+
         let windowCols = Math.max(2, Math.floor(b.w / 1.3));
         let winW = 0.5, winH = 0.8;
-        
+
         if (windowStyle === 'ribbon') {
             windowCols = Math.max(2, Math.floor(b.w / 0.7));
             winW = 0.7;
@@ -888,25 +902,25 @@ function createBuilding3D(b) {
             winW = 0.2;
             winH = 0.2;
         }
-        
+
         for (let c = 0; c < windowCols; c++) {
-            const offsetX = b.x - b.w/2 + (c + 0.5) * (b.w / windowCols);
+            const offsetX = b.x - b.w / 2 + (c + 0.5) * (b.w / windowCols);
             const winX = offsetX - b.x;
-            
+
             const winFront = new THREE.Mesh(
-                new THREE.BoxGeometry(winW, winH, 0.05), 
+                new THREE.BoxGeometry(winW, winH, 0.05),
                 windowMat
             );
-            winFront.position.set(winX, FLOOR_HEIGHT/2, b.d/2 + 0.02);
-            
+            winFront.position.set(winX, FLOOR_HEIGHT / 2, b.d / 2 + 0.02);
+
             if (!hasGlassCurtain) {
                 winFront.castShadow = true;
                 windowGroup.add(winFront);
                 const winBack = winFront.clone();
-                winBack.position.z = -b.d/2 - 0.02;
+                winBack.position.z = -b.d / 2 - 0.02;
                 windowGroup.add(winBack);
             }
-            
+
             if (style === 'brutalist') {
                 const concreteFrame = new THREE.MeshStandardMaterial({
                     color: 0x616161,
@@ -949,9 +963,9 @@ function createBuilding3D(b) {
                 glassBack.position.z = -b.d / 2 - 0.03;
                 windowGroup.add(glassBack);
             } else {
-                const frameMat = new THREE.MeshStandardMaterial({ 
-                    color: 0xFFFFFF, 
-                    roughness: 0.4 
+                const frameMat = new THREE.MeshStandardMaterial({
+                    color: 0xFFFFFF,
+                    roughness: 0.4
                 });
                 const frameFront = new THREE.Mesh(
                     new THREE.BoxGeometry(winW + 0.08, winH + 0.08, 0.03),
@@ -960,14 +974,14 @@ function createBuilding3D(b) {
                 frameFront.position.copy(winFront.position);
                 frameFront.position.z -= 0.03;
                 windowGroup.add(frameFront);
-                
+
                 const frameBack = frameFront.clone();
-                frameBack.position.z = -b.d/2 - 0.03;
+                frameBack.position.z = -b.d / 2 - 0.03;
                 windowGroup.add(frameBack);
             }
         }
         floorGroup.add(windowGroup);
-        
+
         if (f === 1) {
             const entranceMat = new THREE.MeshStandardMaterial({
                 color: style === 'brutalist' ? 0x3A3A3A : 0x4A4A4A,
@@ -978,39 +992,38 @@ function createBuilding3D(b) {
                 new THREE.BoxGeometry(1.2, 1.8, 0.1),
                 entranceMat
             );
-            entrance.position.set(0, 0.9, b.d/2 + 0.05);
+            entrance.position.set(0, 0.9, b.d / 2 + 0.05);
             entrance.castShadow = true;
             floorGroup.add(entrance);
-            
+
             if (style === 'brutalist') {
                 const doorFrame = new THREE.Mesh(
                     new THREE.BoxGeometry(1.4, 2.0, 0.15),
                     new THREE.MeshStandardMaterial({ color: 0x5A5A5A, roughness: 0.9 })
                 );
-                doorFrame.position.set(0, 1.0, b.d/2 + 0.02);
+                doorFrame.position.set(0, 1.0, b.d / 2 + 0.02);
                 floorGroup.add(doorFrame);
             }
-            
+
             for (let s = 0; s < 3; s++) {
                 const step = new THREE.Mesh(
                     new THREE.BoxGeometry(1.4, 0.1, 0.3),
                     new THREE.MeshStandardMaterial({ color: style === 'brutalist' ? 0x6A6A6A : 0xD4C5B0 })
                 );
-                step.position.set(0, 0.05 + s * 0.1, b.d/2 + 0.3 + s * 0.3);
+                step.position.set(0, 0.05 + s * 0.1, b.d / 2 + 0.3 + s * 0.3);
                 step.receiveShadow = true;
                 step.castShadow = true;
                 floorGroup.add(step);
             }
         }
-        
+
         const roomsGroup = new THREE.Group();
         roomsGroup.name = 'rooms';
         roomsGroup.visible = false;
-        
+
         const floorRooms = ROOMS.filter(r => r.building === b.id && r.floor === f);
         floorRooms.forEach(r => {
-            const local = toBuildingLocal(r.x, r.z, b);
-            const rel = clampRoomPosition(local.x, local.z, r.w, r.d, b.w, b.d);
+            const rel = clampRoomPosition(r.x, r.z, r.w, r.d, b.w, b.d);
             const roomMat = new THREE.MeshStandardMaterial({
                 color: new THREE.Color(r.color),
                 roughness: 0.5,
@@ -1025,52 +1038,52 @@ function createBuilding3D(b) {
             roomMesh.receiveShadow = true;
             roomMesh.userData = { type: 'room', roomId: r.id };
             roomsGroup.add(roomMesh);
-            
+
             const wallMat = new THREE.LineBasicMaterial({ color: 0xBBBBBB });
             const points = [
-                new THREE.Vector3(-r.w/2, -0.1, -r.d/2),
-                new THREE.Vector3(r.w/2, -0.1, -r.d/2),
-                new THREE.Vector3(r.w/2, -0.1, r.d/2),
-                new THREE.Vector3(-r.w/2, -0.1, r.d/2),
-                new THREE.Vector3(-r.w/2, -0.1, -r.d/2)
+                new THREE.Vector3(-r.w / 2, -0.1, -r.d / 2),
+                new THREE.Vector3(r.w / 2, -0.1, -r.d / 2),
+                new THREE.Vector3(r.w / 2, -0.1, r.d / 2),
+                new THREE.Vector3(-r.w / 2, -0.1, r.d / 2),
+                new THREE.Vector3(-r.w / 2, -0.1, -r.d / 2)
             ];
             const geometry = new THREE.BufferGeometry().setFromPoints(points);
             const line = new THREE.Line(geometry, wallMat);
             line.position.set(rel.x, 0.08, rel.z);
             line.userData = { type: 'roomOutline', roomId: r.id };
             roomsGroup.add(line);
-            
+
             if (r.type === 'class' || r.type === 'lab') {
                 const furnitureGroup = new THREE.Group();
                 furnitureGroup.name = 'furniture';
-                
-                const deskMat = new THREE.MeshStandardMaterial({ 
-                    color: 0x8B5A2B, 
-                    roughness: 0.8 
+
+                const deskMat = new THREE.MeshStandardMaterial({
+                    color: 0x8B5A2B,
+                    roughness: 0.8
                 });
                 const desk = new THREE.Mesh(
-                    new THREE.BoxGeometry(Math.min(0.55, r.w * 0.35), 0.1, Math.min(0.35, r.d * 0.25)), 
+                    new THREE.BoxGeometry(Math.min(0.55, r.w * 0.35), 0.1, Math.min(0.35, r.d * 0.25)),
                     deskMat
                 );
-                desk.position.set(0, 0.05, -r.d/2 + Math.min(0.35, r.d * 0.22));
+                desk.position.set(0, 0.05, -r.d / 2 + Math.min(0.35, r.d * 0.22));
                 desk.castShadow = true;
                 furnitureGroup.add(desk);
-                
-                const benchMat = new THREE.MeshStandardMaterial({ 
-                    color: 0xC69C6D, 
-                    roughness: 0.7 
+
+                const benchMat = new THREE.MeshStandardMaterial({
+                    color: 0xC69C6D,
+                    roughness: 0.7
                 });
                 const rows = Math.max(1, Math.min(3, Math.floor((r.d - 0.6) / 0.45)));
                 const cols = Math.max(1, Math.min(4, Math.floor((r.w - 0.4) / 0.45)));
                 const spacingX = (r.w - 0.4) / (cols + 1);
                 const spacingZ = (r.d - 0.7) / (rows + 1);
-                
+
                 for (let i = 0; i < rows; i++) {
                     for (let j = 0; j < cols; j++) {
-                        const bx = -r.w/2 + 0.2 + (j + 1) * spacingX;
-                        const bz = -r.d/2 + 0.35 + (i + 1) * spacingZ;
+                        const bx = -r.w / 2 + 0.2 + (j + 1) * spacingX;
+                        const bz = -r.d / 2 + 0.35 + (i + 1) * spacingZ;
                         const bench = new THREE.Mesh(
-                            new THREE.BoxGeometry(0.28, 0.05, 0.28), 
+                            new THREE.BoxGeometry(0.28, 0.05, 0.28),
                             benchMat
                         );
                         bench.position.set(bx, 0.05, bz);
@@ -1083,7 +1096,7 @@ function createBuilding3D(b) {
             }
         });
         floorGroup.add(roomsGroup);
-        
+
         const corridorMat = new THREE.MeshStandardMaterial({
             color: 0xD4C5B0,
             roughness: 0.9
@@ -1100,8 +1113,8 @@ function createBuilding3D(b) {
 
         lineMat = new THREE.LineBasicMaterial({ color: 0xC4B5A0 });
         const corridorPoints = [
-            new THREE.Vector3(-corridorWidth/2, 0.07, -b.d/2 + 0.2),
-            new THREE.Vector3(-corridorWidth/2, 0.07, b.d/2 - 0.2)
+            new THREE.Vector3(-corridorWidth / 2, 0.07, -b.d / 2 + 0.2),
+            new THREE.Vector3(-corridorWidth / 2, 0.07, b.d / 2 - 0.2)
         ];
         const corridorLine1 = new THREE.Line(
             new THREE.BufferGeometry().setFromPoints(corridorPoints),
@@ -1111,8 +1124,8 @@ function createBuilding3D(b) {
         floorGroup.add(corridorLine1);
 
         const corridorPoints2 = [
-            new THREE.Vector3(corridorWidth/2, 0.07, -b.d/2 + 0.2),
-            new THREE.Vector3(corridorWidth/2, 0.07, b.d/2 - 0.2)
+            new THREE.Vector3(corridorWidth / 2, 0.07, -b.d / 2 + 0.2),
+            new THREE.Vector3(corridorWidth / 2, 0.07, b.d / 2 - 0.2)
         ];
         const corridorLine2 = new THREE.Line(
             new THREE.BufferGeometry().setFromPoints(corridorPoints2),
@@ -1125,62 +1138,61 @@ function createBuilding3D(b) {
         if (!hasStairsRoom && f > 1) {
             const stairMat = new THREE.MeshStandardMaterial({ color: 0x95A5A6 });
             const stairGroup = new THREE.Group();
-            
+
             for (let step = 0; step < 6; step++) {
                 const stepMesh = new THREE.Mesh(
                     new THREE.BoxGeometry(0.45, 0.02, 0.22),
                     stairMat
                 );
                 stepMesh.position.set(
-                    -b.w/2 + 0.55,
+                    -b.w / 2 + 0.55,
                     step * 0.16,
-                    -b.d/2 + 0.75 + (step % 2) * 0.25
+                    -b.d / 2 + 0.75 + (step % 2) * 0.25
                 );
                 stepMesh.castShadow = true;
                 stairGroup.add(stepMesh);
             }
-            
+
             floorGroup.add(stairGroup);
         }
 
         if (f === 1) {
             const floorIndicator = new THREE.Mesh(
                 new THREE.CircleGeometry(0.3, 16),
-                new THREE.MeshStandardMaterial({ 
+                new THREE.MeshStandardMaterial({
                     color: b.color,
                     transparent: true,
                     opacity: 0.6
                 })
             );
-            floorIndicator.rotation.x = -Math.PI/2;
-            floorIndicator.position.set(b.w/2 - 0.8, 0.08, b.d/2 - 0.8);
+            floorIndicator.rotation.x = -Math.PI / 2;
+            floorIndicator.position.set(b.w / 2 - 0.8, 0.08, b.d / 2 - 0.8);
             floorIndicator.userData = { explodeGroup: 'floorDetail' };
             floorGroup.add(floorIndicator);
         }
-        
+
         const doorMat = new THREE.MeshStandardMaterial({ color: 0x6B5E4F });
         floorRooms.forEach(r => {
             if (r.type === 'special' && (r.id.endsWith('SC') || r.id.endsWith('WC'))) return;
-            const local = toBuildingLocal(r.x, r.z, b);
-            const rel = clampRoomPosition(local.x, local.z, r.w, r.d, b.w, b.d);
+            const rel = clampRoomPosition(r.x, r.z, r.w, r.d, b.w, b.d);
             const door = new THREE.Mesh(
                 new THREE.BoxGeometry(0.1, 0.16, 0.45),
                 doorMat
             );
             const doorX = rel.x;
             const doorZ = rel.z;
-            
-            if (Math.abs(doorX) < b.w/3) {
+
+            if (Math.abs(doorX) < b.w / 3) {
                 door.position.set(
-                    doorX > 0 ? b.w/2 - 0.05 : -b.w/2 + 0.05,
+                    doorX > 0 ? b.w / 2 - 0.05 : -b.w / 2 + 0.05,
                     0.08,
                     doorZ
                 );
-                door.rotation.y = doorX > 0 ? Math.PI/2 : -Math.PI/2;
+                door.rotation.y = doorX > 0 ? Math.PI / 2 : -Math.PI / 2;
             } else {
-                door.position.set(doorX, 0.08, doorZ > 0 ? -b.d/2 + 0.05 : b.d/2 - 0.05);
+                door.position.set(doorX, 0.08, doorZ > 0 ? -b.d / 2 + 0.05 : b.d / 2 - 0.05);
             }
-            
+
             door.castShadow = true;
             door.userData = { explodeGroup: 'floorDetail' };
             floorGroup.add(door);
@@ -1188,34 +1200,34 @@ function createBuilding3D(b) {
         bGroup.add(floorGroup);
         floorGroups.push(floorGroup);
     }
-    
+
     const roofGroup = new THREE.Group();
     roofGroup.position.y = floors * FLOOR_HEIGHT;
-    
-    const roofMat = new THREE.MeshStandardMaterial({ 
-        color: roofTint ? roofTint.clone() : baseColor.clone().multiplyScalar(0.7), 
+
+    const roofMat = new THREE.MeshStandardMaterial({
+        color: roofTint ? roofTint.clone() : baseColor.clone().multiplyScalar(0.7),
         roughness: facadeRoughness * 1.2,
         metalness: style === 'gym' ? 0.45 : 0.05
     });
-    
+
     let roofMesh;
-    
+
     switch (roofStyle) {
         case 'gabled': {
             const shape = new THREE.Shape();
             const overhang = 0.3;
             const roofHeight = 0.8;
-            shape.moveTo(-b.w/2 - overhang, 0);
+            shape.moveTo(-b.w / 2 - overhang, 0);
             shape.lineTo(0, roofHeight);
-            shape.lineTo(b.w/2 + overhang, 0);
-            shape.lineTo(-b.w/2 - overhang, 0);
+            shape.lineTo(b.w / 2 + overhang, 0);
+            shape.lineTo(-b.w / 2 - overhang, 0);
             const extrudeSettings = { depth: b.d + overhang * 2, bevelEnabled: false };
             const roofGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
             roofMesh = new THREE.Mesh(roofGeo, roofMat);
-            roofMesh.position.set(0, 0, -b.d/2 - overhang);
+            roofMesh.position.set(0, 0, -b.d / 2 - overhang);
             roofMesh.castShadow = true;
             roofGroup.add(roofMesh);
-            
+
             const roofTrim = new THREE.Mesh(
                 new THREE.BoxGeometry(b.w + overhang * 2 + 0.1, 0.1, b.d + overhang * 2 + 0.1),
                 new THREE.MeshStandardMaterial({ color: 0x8B7355 })
@@ -1228,11 +1240,11 @@ function createBuilding3D(b) {
         case 'pyramid': {
             const pyramidGeo = new THREE.ConeGeometry(Math.max(b.w, b.d) * 0.7, 0.8, 4);
             roofMesh = new THREE.Mesh(pyramidGeo, roofMat);
-            roofMesh.rotation.y = Math.PI/4;
+            roofMesh.rotation.y = Math.PI / 4;
             roofMesh.position.y = 0.4;
             roofMesh.castShadow = true;
             roofGroup.add(roofMesh);
-            
+
             const roofTrim = new THREE.Mesh(
                 new THREE.BoxGeometry(b.w + 0.4, 0.1, b.d + 0.4),
                 new THREE.MeshStandardMaterial({ color: 0x8B7355 })
@@ -1251,7 +1263,7 @@ function createBuilding3D(b) {
             });
             for (let s = 0; s < numShelves; s++) {
                 const shelfWidth = b.w / numShelves;
-                const shelfX = -b.w/2 + s * shelfWidth + shelfWidth/2;
+                const shelfX = -b.w / 2 + s * shelfWidth + shelfWidth / 2;
                 const shelfHeight = 0.2 + (s / numShelves) * 0.4;
                 const shelf = new THREE.Mesh(
                     new THREE.BoxGeometry(shelfWidth - 0.1, 0.04, b.d + 0.2),
@@ -1260,7 +1272,7 @@ function createBuilding3D(b) {
                 shelf.position.set(shelfX, shelfHeight, 0);
                 shelf.castShadow = true;
                 roofGroup.add(shelf);
-                
+
                 const supportMat = new THREE.MeshStandardMaterial({
                     color: 0x5A5A5A,
                     roughness: 0.7,
@@ -1271,11 +1283,11 @@ function createBuilding3D(b) {
                         new THREE.CylinderGeometry(0.04, 0.06, shelfHeight, 6),
                         supportMat
                     );
-                    support.position.set(shelfX + side * (shelfWidth/2 - 0.2), shelfHeight/2, side * (b.d/2 - 0.2));
+                    support.position.set(shelfX + side * (shelfWidth / 2 - 0.2), shelfHeight / 2, side * (b.d / 2 - 0.2));
                     roofGroup.add(support);
                 }
             }
-            
+
             const topMat = new THREE.MeshStandardMaterial({
                 color: baseColor.clone().multiplyScalar(0.5),
                 roughness: facadeRoughness * 1.5,
@@ -1313,7 +1325,7 @@ function createBuilding3D(b) {
             roofMesh.position.y = 0.2;
             roofMesh.castShadow = true;
             roofGroup.add(roofMesh);
-            
+
             const roofTrim = new THREE.Mesh(
                 new THREE.BoxGeometry(b.w + 0.6, 0.1, b.d + 0.6),
                 new THREE.MeshStandardMaterial({ color: 0x8B7355 })
@@ -1324,12 +1336,12 @@ function createBuilding3D(b) {
             break;
         }
     }
-    
+
     bGroup.add(roofGroup);
-    
+
     bGroup.position.set(b.x, 0, b.z);
     bGroup.rotation.y = degToRad(b.rotation);
-    
+
     buildingMeshes[b.id] = {
         group: bGroup,
         floorGroups: floorGroups,
@@ -1339,7 +1351,7 @@ function createBuilding3D(b) {
         w: b.w, d: b.d, x: b.x, z: b.z,
         rotation: b.rotation || 0
     };
-    
+
     return bGroup;
 }
 
@@ -1451,18 +1463,26 @@ function createLamp() {
 }
 
 function getStartPosition() {
-    if (!state || !state.startPlace) return new THREE.Vector3(0, 0.1, 0);
-    let pos = new THREE.Vector3(0, 0.1, 0);
-    if (state.startPlace.type === 'room') {
-        const room = ROOMS.find(r => r.id === state.startPlace.id);
-        if (room) pos.set(room.x, room.floor * FLOOR_HEIGHT - 0.2, room.z);
-    } else if (state.startPlace.type === 'entrance') {
-        const bldId = resolveEntranceBuildingId(state.startPlace.id);
-        const bld = BUILDINGS.find(b => b.id === bldId);
-        if (bld) pos.set(bld.x, 0.1, bld.z + bld.d/2 + 0.5);
-        else pos.set(0, 0.1, 3.5);
+  if (!state || !state.startPlace) return new THREE.Vector3(0, 0.1, 0);
+  let pos = new THREE.Vector3(0, 0.1, 0);
+  if (state.startPlace.type === 'room') {
+    const room = ROOMS.find(r => r.id === state.startPlace.id);
+    if (room) {
+      const building = BUILDINGS.find(b => b.id === room.building);
+      if (building) {
+        const world = roomToWorld(room, building);
+        pos.set(world.x, room.floor * FLOOR_HEIGHT - 0.2, world.z);
+      } else {
+        pos.set(room.x, room.floor * FLOOR_HEIGHT - 0.2, room.z); // fallback
+      }
     }
-    return pos;
+  } else if (state.startPlace.type === 'entrance') {
+    const bldId = resolveEntranceBuildingId(state.startPlace.id);
+    const bld = BUILDINGS.find(b => b.id === bldId);
+    if (bld) pos.set(bld.x, 0.1, bld.z + bld.d/2 + 0.5);
+    else pos.set(0, 0.1, 3.5);
+  }
+  return pos;
 }
 
 function createStartMarker() {
@@ -1684,26 +1704,37 @@ function collapseBuilding(bldId) {
 }
 
 function draw3DNavigationPath(startObj, endRoom) {
+    // Pulisce il percorso precedente
     while (pathGroup.children.length > 0) pathGroup.remove(pathGroup.children[0]);
+
     if (!startObj || !endRoom) return null;
-    
-    const points = [];
+
+    // --- Punto di partenza ---
     let startPos = new THREE.Vector3(0, 0.1, 0);
     let startBldId = 'A';
     let startLabel = 'Starting point';
-    
+
     if (startObj.type === 'room') {
         const startRoom = ROOMS.find(r => r.id === startObj.id);
         if (startRoom) {
-            startPos.set(startRoom.x, startRoom.floor * FLOOR_HEIGHT - 0.2, startRoom.z);
-            startBldId = startRoom.building;
-            startLabel = startRoom.name;
+            const startBld = BUILDINGS.find(b => b.id === startRoom.building);
+            if (startBld) {
+                const world = roomToWorld(startRoom, startBld);
+                startPos.set(world.x, startRoom.floor * FLOOR_HEIGHT - 0.2, world.z);
+                startBldId = startRoom.building;
+                startLabel = startRoom.name;
+            } else {
+                // fallback: usa le coordinate locali come globali (non dovrebbe accadere)
+                startPos.set(startRoom.x, startRoom.floor * FLOOR_HEIGHT - 0.2, startRoom.z);
+                startBldId = startRoom.building;
+                startLabel = startRoom.name;
+            }
         }
     } else if (startObj.type === 'entrance') {
         const bldId = resolveEntranceBuildingId(startObj.id);
         const bld = BUILDINGS.find(b => b.id === bldId);
         if (bld) {
-            startPos.set(bld.x, 0.1, bld.z + bld.d/2 + 0.5);
+            startPos.set(bld.x, 0.1, bld.z + bld.d / 2 + 0.5);
             startBldId = bld.id;
             startLabel = 'Entrance ' + bld.name;
         } else {
@@ -1712,64 +1743,75 @@ function draw3DNavigationPath(startObj, endRoom) {
             startLabel = 'Main entrance';
         }
     }
-    
+
+    // --- Punto di arrivo (stanza) ---
+    const endBldData = BUILDINGS.find(b => b.id === endRoom.building);
+    if (!endBldData) return null;
+    const endWorld = roomToWorld(endRoom, endBldData);
+    const endPos = new THREE.Vector3(endWorld.x, endRoom.floor * FLOOR_HEIGHT - 0.2, endWorld.z);
+
+    // --- Costruzione dei punti del percorso ---
+    const points = [];
     points.push(startPos.clone());
-    
-    const endBldId = endRoom.building;
-    const endBldData = BUILDINGS.find(b => b.id === endBldId);
+
     const startBldData = BUILDINGS.find(b => b.id === startBldId);
-    const sameBuilding = (startBldId === endBldId);
-    let viaCorridor = null;
-    
+    const sameBuilding = (startBldId === endRoom.building);
+
     if (!sameBuilding) {
+        // Uscita dall'edificio di partenza
         const startGround = new THREE.Vector3(startPos.x, 0.15, startPos.z);
         points.push(startGround);
-        
-        const startBld = startBldData;
-        const startDoor = new THREE.Vector3(startBld.x, 0.1, startBld.z + startBld.d/2 + 0.3);
-        points.push(startDoor);
-        
-        const wpStart = WAYPOINTS[startBldId] || new THREE.Vector3(startBld.x, 0.1, startBld.z);
+
+        if (startBldData) {
+            const startDoor = new THREE.Vector3(startBldData.x, 0.1, startBldData.z + startBldData.d / 2 + 0.3);
+            points.push(startDoor);
+        }
+
+        // Waypoint generico dell'edificio di partenza
+        const wpStart = WAYPOINTS[startBldId] || new THREE.Vector3(startBldData ? startBldData.x : 0, 0.1, startBldData ? startBldData.z : 0);
         points.push(wpStart.clone());
-        
-        if ((startBldId === 'B' && endBldId === 'C') || (startBldId === 'C' && endBldId === 'B')) {
+
+        // Corridoio centrale se necessario (esempio di logica originale)
+        if ((startBldId === 'B' && endRoom.building === 'C') || (startBldId === 'C' && endRoom.building === 'B')) {
             points.push(WAYPOINTS['CORRIDOR_CENTER'].clone());
-            viaCorridor = 'the central corridor';
-        } else if (startBldId === 'GYM1' && endBldId === 'C') {
+        } else if (startBldId === 'GYM1' && endRoom.building === 'C') {
             points.push(WAYPOINTS['CORRIDOR_WEST'].clone());
             points.push(WAYPOINTS['CORRIDOR_CENTER'].clone());
-            viaCorridor = 'the west corridor and then the central one';
-        } else if (startBldId === 'GYM2' && endBldId === 'B') {
+        } else if (startBldId === 'GYM2' && endRoom.building === 'B') {
             points.push(WAYPOINTS['CORRIDOR_EAST'].clone());
             points.push(WAYPOINTS['CORRIDOR_CENTER'].clone());
-            viaCorridor = 'the east corridor and then the central one';
         }
-        
-        const wpEnd = WAYPOINTS[endBldId] || new THREE.Vector3(endRoom.x, 0.1, endRoom.z);
+
+        // Waypoint dell'edificio di destinazione
+        const wpEnd = WAYPOINTS[endRoom.building] || new THREE.Vector3(endBldData.x, 0.1, endBldData.z);
         points.push(wpEnd.clone());
-        
-        const endBld = endBldData;
-        const endDoor = new THREE.Vector3(endBld.x, 0.1, endBld.z + endBld.d/2 + 0.3);
+
+        // Porta dell'edificio di destinazione
+        const endDoor = new THREE.Vector3(endBldData.x, 0.1, endBldData.z + endBldData.d / 2 + 0.3);
         points.push(endDoor);
-        
-        const endGround = new THREE.Vector3(endRoom.x, 0.15, endRoom.z);
+
+        // Punto a terra prima di entrare
+        const endGround = new THREE.Vector3(endWorld.x, 0.15, endWorld.z);
         points.push(endGround);
     } else {
+        // Stesso edificio: solo spostamento verticale
         const verticalPoint = new THREE.Vector3(startPos.x, endRoom.floor * FLOOR_HEIGHT - 0.2, startPos.z);
         points.push(verticalPoint);
     }
-    
-    const endPos = new THREE.Vector3(endRoom.x, endRoom.floor * FLOOR_HEIGHT - 0.2, endRoom.z);
-    points.push(endPos);
-    
+
+    // Punto finale esatto della stanza
+    points.push(endPos.clone());
+
+    // --- Creazione della curva e del tubo ---
     let totalLength = 0;
     for (let i = 1; i < points.length; i++) {
         totalLength += points[i].distanceTo(points[i - 1]);
     }
-    
+
     const curve = new THREE.CatmullRomCurve3(points);
     const tubePoints = curve.getPoints(200);
-    
+
+    // Tubo principale
     const pathCurve = new THREE.CatmullRomCurve3(points);
     const tubeGeometry = new THREE.TubeGeometry(pathCurve, 100, 0.15, 8, false);
     const tubeMaterial = new THREE.MeshStandardMaterial({
@@ -1784,7 +1826,8 @@ function draw3DNavigationPath(startObj, endRoom) {
     const pathTube = new THREE.Mesh(tubeGeometry, tubeMaterial);
     pathTube.castShadow = true;
     pathGroup.add(pathTube);
-    
+
+    // Glow
     const glowGeometry = new THREE.TubeGeometry(pathCurve, 100, 0.25, 8, false);
     const glowMaterial = new THREE.MeshBasicMaterial({
         color: 0xFFA500,
@@ -1794,37 +1837,32 @@ function draw3DNavigationPath(startObj, endRoom) {
     });
     const glowTube = new THREE.Mesh(glowGeometry, glowMaterial);
     pathGroup.add(glowTube);
-    
+
+    // Linea ausiliaria
     const tubeGeo = new THREE.BufferGeometry().setFromPoints(tubePoints);
-    const tubeMat = new THREE.LineBasicMaterial({ 
-        color: 0xFFD700, 
-        linewidth: 3,
+    const tubeMat = new THREE.LineBasicMaterial({
+        color: 0xFFD700,
         transparent: true,
         opacity: 0.9
     });
     const tubeLine = new THREE.Line(tubeGeo, tubeMat);
     pathGroup.add(tubeLine);
-    
+
+    // Frecce direzionali
     const arrowGroup = new THREE.Group();
-    const arrowMat = new THREE.MeshStandardMaterial({ 
+    const arrowMat = new THREE.MeshStandardMaterial({
         color: 0xFFFFFF,
         emissive: 0xFFA500,
         emissiveIntensity: 0.5
     });
-    
     for (let i = 0; i < tubePoints.length - 1; i += 8) {
         const p1 = tubePoints[i];
-        const p2 = tubePoints[Math.min(i+10, tubePoints.length-1)];
+        const p2 = tubePoints[Math.min(i + 10, tubePoints.length - 1)];
         const dir = new THREE.Vector3().copy(p2).sub(p1).normalize();
         const mid = new THREE.Vector3().copy(p1).add(p2).multiplyScalar(0.5);
-        
-        const arrow = new THREE.Mesh(
-            new THREE.ConeGeometry(0.25, 0.7, 8), 
-            arrowMat
-        );
+        const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.7, 8), arrowMat);
         arrow.position.copy(mid);
         arrow.position.y += 0.35;
-        
         const up = new THREE.Vector3(0, 1, 0);
         const quat = new THREE.Quaternion().setFromUnitVectors(up, dir);
         arrow.quaternion.copy(quat);
@@ -1832,7 +1870,8 @@ function draw3DNavigationPath(startObj, endRoom) {
         arrowGroup.add(arrow);
     }
     pathGroup.add(arrowGroup);
-    
+
+    // Marcatori animati
     const markerGeometry = new THREE.SphereGeometry(0.4, 16, 16);
     const markerMaterial = new THREE.MeshStandardMaterial({
         color: 0xFF3300,
@@ -1845,14 +1884,14 @@ function draw3DNavigationPath(startObj, endRoom) {
     marker.position.copy(startPos);
     marker.position.y += 0.4;
     marker.castShadow = true;
-    marker.userData = { 
-        isMarker: true, 
-        curve: pathCurve, 
-        progress: 0, 
-        speed: 0.0003 
+    marker.userData = {
+        isMarker: true,
+        curve: pathCurve,
+        progress: 0,
+        speed: 0.0003
     };
     pathGroup.add(marker);
-    
+
     const ringGeometry = new THREE.RingGeometry(0.3, 0.5, 32);
     const ringMaterial = new THREE.MeshBasicMaterial({
         color: 0xFF6600,
@@ -1861,27 +1900,29 @@ function draw3DNavigationPath(startObj, endRoom) {
         opacity: 0.6
     });
     const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-    ring.rotation.x = -Math.PI/2;
+    ring.rotation.x = -Math.PI / 2;
     ring.position.copy(startPos);
     ring.position.y += 0.05;
     ring.userData = { isRing: true };
     pathGroup.add(ring);
-    
+
     pathGroup.userData = { time: 0, marker: marker, ring: ring };
-    
+
+    // Imposta la telecamera sul punto di partenza
     targetLookAt.copy(startPos);
     targetZoom = 2.5;
-    
+
+    // Restituisce informazioni sul percorso
     return {
-        totalLength,
-        sameBuilding,
-        startLabel,
-        startBldId,
-        startBldData,
-        endBldId,
-        endBldData,
-        viaCorridor,
-        endRoom
+        totalLength: totalLength,
+        sameBuilding: sameBuilding,
+        startLabel: startLabel,
+        startBldId: startBldId,
+        startBldData: startBldData,
+        endBldId: endRoom.building,
+        endBldData: endBldData,
+        viaCorridor: null, // può essere riempito con logica aggiuntiva
+        endRoom: endRoom
     };
 }
 

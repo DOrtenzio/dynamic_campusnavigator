@@ -143,6 +143,38 @@ function adminTab(name) {
   if (name === 'schedule') renderAdminSchedule();
   if (name === 'map') renderAdminMap();
   if (name === 'csv') renderAdminCSV();
+  if(name === 'chatbot') renderChatbotAdmin();
+}
+
+async function renderChatbotAdmin() {
+  const settings = await apiRequest('GET', '/settings');
+  const enabled = settings.chatbotEnabled ?? true;
+  document.getElementById('adminContent').innerHTML = `
+    <div style="padding:28px; max-width:500px;">
+      <h2 style="font-family:'Outfit',sans-serif;font-weight:700;font-size:20px;margin-bottom:6px;">Chatbot AI</h2>
+      <p style="color:var(--text-medium);font-size:13px;margin-bottom:24px;">Abilita o disabilita l'assistente virtuale per gli utenti.</p>
+      <div style="display:flex;align-items:center;gap:16px;background:white;padding:18px;border-radius:14px;border:1.5px solid rgba(0,0,0,0.08);">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:15px;">Assistente Campus</div>
+          <div style="font-size:12px;color:var(--text-medium);margin-top:3px;">Qwen 2.5 · Ollama locale</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:48px;height:26px;">
+          <input type="checkbox" id="chatbotToggle" ${enabled ? 'checked' : ''} style="opacity:0;width:0;height:0;">
+          <span onclick="toggleChatbotSetting()" style="position:absolute;inset:0;background:${enabled ? '#D4A373' : '#ccc'};border-radius:26px;cursor:pointer;transition:background 0.2s;">
+            <span style="position:absolute;width:20px;height:20px;background:white;border-radius:50%;top:3px;left:${enabled ? '25px' : '3px'};transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.2);"></span>
+          </span>
+        </label>
+      </div>
+    </div>`;
+}
+
+async function toggleChatbotSetting() {
+  const cb = document.getElementById('chatbotToggle');
+  const newVal = !cb.checked;
+  cb.checked = newVal;
+  await apiRequest('PATCH', '/settings', { chatbotEnabled: newVal });
+  renderChatbotAdmin();
+  showToast(newVal ? 'Chatbot abilitato' : 'Chatbot disabilitato');
 }
 
 function renderAdminTeachers(filter = '') {
