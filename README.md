@@ -1,3 +1,16 @@
+> [!CAUTION]
+> Issue with the AI ​​and the map: they need to be fixed.
+> Please accept my apologies; I will do my utmost to ensure that the essential corrections are made as soon as possible.
+> Here are the identified issues and their causes:
+> - RAG context management insufficiently optimized for small-scale models;
+> - Errors in managing rooms within buildings and in their drag-and-drop repositioning, caused by inconsistencies in 3D map calculations
+> 
+> Thank you for your understanding.
+
+---
+---
+---
+
 <div align="center">
 
 <img width="1264" height="309" alt="logo" src="https://github.com/user-attachments/assets/a5fe1542-b9a1-4e40-90aa-c40c9319275f" />
