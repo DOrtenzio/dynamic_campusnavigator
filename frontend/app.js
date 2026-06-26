@@ -14,6 +14,7 @@ let BUILDINGS = [];
 let ROOMS = [];
 let TEACHERS = [];
 let CLASSES = [];
+let CAMPUS_ELEMENTS = [];
 
 const DEPARTMENTS = ['Lettere','Scientifico','Lingue','Arte','Motoria','Tecnologico'];
 const ROOM_TYPES = ['class','lab','office','special'];
@@ -75,17 +76,19 @@ let SCHEDULE = {};
 
 async function loadDataFromBackend() {
   try {
-    const [buildings, rooms, teachers, schedule] = await Promise.all([
+    const [buildings, rooms, teachers, schedule, campusElements] = await Promise.all([
       apiGet('/buildings'),
       apiGet('/rooms'),
       apiGet('/teachers'),
-      apiGet('/schedule')
+      apiGet('/schedule'),
+      apiGet('/campus-elements')
     ]);
     
     BUILDINGS = buildings;
     ROOMS = rooms;
     TEACHERS = teachers;
     SCHEDULE = schedule || {};
+    CAMPUS_ELEMENTS = campusElements || [];
     
     generateClassesFromRooms();
     

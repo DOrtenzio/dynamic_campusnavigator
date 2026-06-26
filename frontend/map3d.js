@@ -156,163 +156,178 @@ function buildCampus3D() {
     ground.receiveShadow = true;
     campusGroup.add(ground);
     
-    const corridorMat = new THREE.MeshStandardMaterial({
-        color: 0xF5F0E8,
-        roughness: 0.8,
-        emissive: 0xF0E8DC,
-        emissiveIntensity: 0.05
-    });
-    const borderMat = new THREE.MeshStandardMaterial({ 
-        color: 0xD4C5B0,
-        roughness: 0.9
-    });
-    
-    const corridors = [
-        { w: 38, h: 0.1, d: 2.5, x: 0, z: 0 },
-        { w: 2.5, h: 0.1, d: 20, x: 0, z: -8 },
-        { w: 2.5, h: 0.1, d: 20, x: 0, z: 9 },
-        { w: 2.5, h: 0.1, d: 16, x: -18, z: 7 },
-        { w: 2.5, h: 0.1, d: 16, x: 18, z: 7 }
-    ];
-    
-    corridors.forEach(c => {
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(c.w, c.h, c.d), corridorMat);
-        mesh.position.set(c.x, c.h/2 + 0.01, c.z);
-        mesh.receiveShadow = true;
-        campusGroup.add(mesh);
-        
-        const border1 = new THREE.Mesh(
-            new THREE.BoxGeometry(c.w + 0.2, 0.08, 0.1),
-            borderMat
-        );
-        border1.position.set(c.x, 0.05, c.z - c.d/2);
-        border1.receiveShadow = true;
-        campusGroup.add(border1);
-        
-        const border2 = border1.clone();
-        border2.position.z = c.z + c.d/2;
-        campusGroup.add(border2);
-    });
+    renderCampusElements();
     
     BUILDINGS.forEach(b => {
         const bGroup = createBuilding3D(b);
         campusGroup.add(bGroup);
     });
     
-    const fountainGroup = new THREE.Group();
-    const fountainBase = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.5, 1.8, 0.3, 16),
-        new THREE.MeshStandardMaterial({ color: 0xD4C5B0, roughness: 0.4 })
-    );
-    fountainBase.position.y = 0.15;
-    fountainBase.receiveShadow = true;
-    fountainBase.castShadow = true;
-    fountainGroup.add(fountainBase);
-    
-    const fountainBowl = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.2, 1.0, 0.4, 16),
-        new THREE.MeshStandardMaterial({ color: 0x58A4B0, roughness: 0.2 })
-    );
-    fountainBowl.position.y = 0.35;
-    fountainBowl.castShadow = true;
-    fountainGroup.add(fountainBowl);
-    
-    const waterJet = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.1, 0.15, 1.2, 8),
-        new THREE.MeshStandardMaterial({ 
-            color: 0x87CEEB, 
-            transparent: true, 
-            opacity: 0.7,
-            emissive: 0x87CEEB,
-            emissiveIntensity: 0.2
-        })
-    );
-    waterJet.position.y = 1.0;
-    waterJet.castShadow = true;
-    fountainGroup.add(waterJet);
-    
-    fountainGroup.position.set(0, 0, 0);
-    campusGroup.add(fountainGroup);
-    
-    const benchPositions = [
-        { x: -5, z: 5 }, { x: 5, z: 5 },
-        { x: -8, z: -3 }, { x: 8, z: -3 }
-    ];
-    
-    benchPositions.forEach(pos => {
-        const bench = createBench();
-        bench.position.set(pos.x, 0, pos.z);
-        bench.rotation.y = Math.random() * Math.PI * 2;
-        campusGroup.add(bench);
+    placeProceduralTrees();
+}
+
+function renderCampusElements() {
+    const elements = (typeof CAMPUS_ELEMENTS !== 'undefined' && CAMPUS_ELEMENTS.length)
+        ? CAMPUS_ELEMENTS
+        : getDefaultCampusElements();
+
+    const sidewalkMat = new THREE.MeshStandardMaterial({
+        color: 0xD8D0C4,
+        roughness: 0.85,
+        emissive: 0xC8BFA8,
+        emissiveIntensity: 0.04
     });
-    
-    const lampPositions = [
-        { x: -10, z: 0 }, { x: 10, z: 0 },
-        { x: 0, z: -12 }, { x: 0, z: 12 }
-    ];
-    
-    lampPositions.forEach(pos => {
-        const lamp = createLamp();
-        lamp.position.set(pos.x, 0, pos.z);
-        campusGroup.add(lamp);
-    });
-    
+    const sidewalkEdgeMat = new THREE.MeshStandardMaterial({ color: 0xA89880, roughness: 0.9 });
     const flowerBedColors = [0xFF6B9D, 0xFFD93D, 0x6BCB77, 0x4D96FF];
-    const flowerPositions = [
-        { x: -6, z: 8 }, { x: 6, z: 8 },
-        { x: -12, z: 5 }, { x: 12, z: 5 }
-    ];
-    
-    flowerPositions.forEach((pos, i) => {
-        const bed = new THREE.Mesh(
-            new THREE.CircleGeometry(1.2, 16),
-            new THREE.MeshStandardMaterial({ 
-                color: flowerBedColors[i % flowerBedColors.length],
-                roughness: 0.9
-            })
-        );
-        bed.rotation.x = -Math.PI/2;
-        bed.position.set(pos.x, 0.05, pos.z);
-        bed.receiveShadow = true;
-        campusGroup.add(bed);
-        
-        for (let f = 0; f < 8; f++) {
-            const angle = (f / 8) * Math.PI * 2;
-            const flower = new THREE.Mesh(
-                new THREE.SphereGeometry(0.15, 6, 6),
-                new THREE.MeshStandardMaterial({ 
-                    color: flowerBedColors[(i + f) % flowerBedColors.length],
-                    emissive: flowerBedColors[(i + f) % flowerBedColors.length],
-                    emissiveIntensity: 0.1
-                })
-            );
-            flower.position.set(
-                pos.x + Math.cos(angle) * 0.6,
-                0.15,
-                pos.z + Math.sin(angle) * 0.6
-            );
-            flower.castShadow = true;
-            campusGroup.add(flower);
+
+    elements.forEach((el, i) => {
+        switch (el.type) {
+            case 'sidewalk': {
+                const mesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(el.w, 0.12, el.d),
+                    sidewalkMat
+                );
+                mesh.position.set(el.x, 0.07, el.z);
+                mesh.rotation.y = degToRad(el.rotation);
+                mesh.receiveShadow = true;
+                campusGroup.add(mesh);
+
+                const edgeGeo = new THREE.BoxGeometry(el.w + 0.15, 0.06, 0.12);
+                [-1, 1].forEach(sign => {
+                    const edge = new THREE.Mesh(edgeGeo, sidewalkEdgeMat);
+                    edge.position.set(el.x, 0.04, el.z + sign * el.d / 2);
+                    edge.rotation.y = degToRad(el.rotation);
+                    campusGroup.add(edge);
+                });
+
+                for (let t = -el.w / 2 + 1.5; t < el.w / 2; t += 3) {
+                    const tile = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.08, 0.02, el.d - 0.3),
+                        new THREE.MeshStandardMaterial({ color: 0xCFC6B8, roughness: 0.95 })
+                    );
+                    tile.position.set(el.x + t, 0.13, el.z);
+                    tile.rotation.y = degToRad(el.rotation);
+                    campusGroup.add(tile);
+                }
+                break;
+            }
+            case 'streetlight': {
+                const lamp = createLamp();
+                lamp.position.set(el.x, 0, el.z);
+                lamp.rotation.y = degToRad(el.rotation || 0);
+                campusGroup.add(lamp);
+                break;
+            }
+            case 'bench': {
+                const bench = createBench();
+                bench.position.set(el.x, 0, el.z);
+                bench.rotation.y = degToRad(el.rotation || 0);
+                campusGroup.add(bench);
+                break;
+            }
+            case 'flowerbed': {
+                const col = flowerBedColors[i % flowerBedColors.length];
+                const bed = new THREE.Mesh(
+                    new THREE.CircleGeometry(1.2, 16),
+                    new THREE.MeshStandardMaterial({ color: col, roughness: 0.9 })
+                );
+                bed.rotation.x = -Math.PI / 2;
+                bed.position.set(el.x, 0.05, el.z);
+                bed.receiveShadow = true;
+                campusGroup.add(bed);
+                for (let f = 0; f < 8; f++) {
+                    const angle = (f / 8) * Math.PI * 2;
+                    const flower = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.15, 6, 6),
+                        new THREE.MeshStandardMaterial({
+                            color: flowerBedColors[(i + f) % flowerBedColors.length],
+                            emissive: flowerBedColors[(i + f) % flowerBedColors.length],
+                            emissiveIntensity: 0.12
+                        })
+                    );
+                    flower.position.set(
+                        el.x + Math.cos(angle) * 0.6,
+                        0.15,
+                        el.z + Math.sin(angle) * 0.6
+                    );
+                    flower.castShadow = true;
+                    campusGroup.add(flower);
+                }
+                break;
+            }
+            case 'fountain': {
+                const fountainGroup = new THREE.Group();
+                const fountainBase = new THREE.Mesh(
+                    new THREE.CylinderGeometry(1.5, 1.8, 0.3, 16),
+                    new THREE.MeshStandardMaterial({ color: 0xD4C5B0, roughness: 0.4 })
+                );
+                fountainBase.position.y = 0.15;
+                fountainBase.receiveShadow = true;
+                fountainBase.castShadow = true;
+                fountainGroup.add(fountainBase);
+                const fountainBowl = new THREE.Mesh(
+                    new THREE.CylinderGeometry(1.2, 1.0, 0.4, 16),
+                    new THREE.MeshStandardMaterial({ color: 0x58A4B0, roughness: 0.2 })
+                );
+                fountainBowl.position.y = 0.35;
+                fountainBowl.castShadow = true;
+                fountainGroup.add(fountainBowl);
+                const waterJet = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.1, 0.15, 1.2, 8),
+                    new THREE.MeshStandardMaterial({
+                        color: 0x87CEEB,
+                        transparent: true,
+                        opacity: 0.7,
+                        emissive: 0x87CEEB,
+                        emissiveIntensity: 0.25
+                    })
+                );
+                waterJet.position.y = 1.0;
+                waterJet.castShadow = true;
+                fountainGroup.add(waterJet);
+                fountainGroup.position.set(el.x, 0, el.z);
+                campusGroup.add(fountainGroup);
+                break;
+            }
+            default:
+                break;
         }
     });
-    
+}
+
+function getDefaultCampusElements() {
+    return [
+        { type: 'sidewalk', x: 0, z: 0, w: 38, d: 2.5, rotation: 0 },
+        { type: 'streetlight', x: -10, z: 0, rotation: 0 },
+        { type: 'streetlight', x: 10, z: 0, rotation: 0 },
+        { type: 'fountain', x: 0, z: 0, rotation: 0 }
+    ];
+}
+
+function placeProceduralTrees() {
+    const elements = (typeof CAMPUS_ELEMENTS !== 'undefined') ? CAMPUS_ELEMENTS : [];
     const treePositions = [];
     for (let i = 0; i < 35; i++) {
         const x = (Math.random() - 0.5) * 72;
         const z = (Math.random() - 0.5) * 62;
-        
-        const collision = BUILDINGS.some(b =>
-            x > b.x - b.w/2 - 2 && x < b.x + b.w/2 + 2 &&
-            z > b.z - b.d/2 - 2 && z < b.z + b.d/2 + 2
-        );
-        
-        const nearPath = Math.abs(x) < 4 || Math.abs(z) < 4;
-        
-        if (!collision && !nearPath) {
+
+        const collision = BUILDINGS.some(b => {
+            const bounds = getBuildingBounds(b, 2);
+            return x >= bounds.minX && x <= bounds.maxX && z >= bounds.minZ && z <= bounds.maxZ;
+        });
+
+        const nearPath = isNearCampusPath(x, z, elements, 2.5);
+        const nearElement = elements.some(el => {
+            if (el.type === 'tree' || el.type === 'sidewalk') return false;
+            const eb = getElementBounds(el);
+            return x >= eb.minX - 1.5 && x <= eb.maxX + 1.5 && z >= eb.minZ - 1.5 && z <= eb.maxZ + 1.5;
+        });
+
+        if (!collision && !nearPath && !nearElement) {
             treePositions.push({ x, z });
         }
     }
-    
+
     const foliageColors = [0x7D9B6E, 0x6B8E5A, 0x8AA77C, 0x5A7D4E];
     treePositions.forEach(p => {
         const tree = createStylizedTree(foliageColors[Math.floor(Math.random() * foliageColors.length)]);
@@ -329,6 +344,7 @@ function createBuilding3D(b) {
     const floors = Math.max(1, b.floors || 1);
     
     const style = b.icon || 'wing';
+    const styleDef = (typeof BUILDING_STYLE_DEFS !== 'undefined' && BUILDING_STYLE_DEFS[style]) || {};
     let roofStyle = 'flat';
     let facadeRoughness = 0.6;
     let windowStyle = 'regular';
@@ -339,71 +355,100 @@ function createBuilding3D(b) {
     let hasBalcony = false;
     let hasColumns = false;
     let hasStripe = false;
+    let hasPediment = false;
+    let hasCorrugated = false;
+    let hasArchedWindows = false;
+    let hasGlassCurtain = false;
+    let hasOrnateFrieze = false;
+    let hasSteelFrame = false;
+    let hasOpenPavilion = false;
+    let roofTint = null;
+    let facadeTint = null;
     
     switch (style) {
         case 'main':
-            facadeRoughness = 0.7;
+            facadeRoughness = 0.82;
             roofStyle = 'gabled';
+            baseColor = color.clone().lerp(new THREE.Color(styleDef.facade || 0xE8DCC8), 0.45);
             windowColor = 0xFFE082;
             windowEmissive = 0xFFB300;
-            windowEmissiveIntensity = 0.3;
+            windowEmissiveIntensity = 0.35;
             hasColumns = true;
+            hasPediment = true;
+            hasArchedWindows = true;
+            roofTint = new THREE.Color(styleDef.roof || 0x8B4513);
             break;
         case 'wing':
-            facadeRoughness = 0.4;
+            facadeRoughness = 0.25;
             roofStyle = 'flat';
             windowStyle = 'ribbon';
-            windowColor = 0xA8D8EA;
-            windowEmissive = 0x4FC3F7;
-            windowEmissiveIntensity = 0.2;
+            baseColor = color.clone().lerp(new THREE.Color(styleDef.facade || 0xECEFF1), 0.55);
+            windowColor = 0x81D4FA;
+            windowEmissive = 0x0288D1;
+            windowEmissiveIntensity = 0.35;
             hasBalcony = true;
+            hasGlassCurtain = true;
+            roofTint = new THREE.Color(styleDef.roof || 0x78909C);
             break;
         case 'brutalist':
-            baseColor = new THREE.Color(0x8B8B8B);
-            facadeRoughness = 0.95;
+            baseColor = new THREE.Color(0x757575);
+            facadeRoughness = 0.98;
             roofStyle = 'flat';
             windowStyle = 'small';
-            windowColor = 0x4A4A4A;
-            windowEmissive = 0x333333;
-            windowEmissiveIntensity = 0.05;
+            windowColor = 0x212121;
+            windowEmissive = 0x111111;
+            windowEmissiveIntensity = 0.02;
             hasStripe = true;
+            roofTint = new THREE.Color(0x424242);
             break;
         case 'liberty':
-            facadeRoughness = 0.5;
+            facadeRoughness = 0.45;
             roofStyle = 'pyramid';
+            baseColor = color.clone().lerp(new THREE.Color(styleDef.facade || 0xFFF8E7), 0.5);
             windowColor = 0xFFD699;
             windowEmissive = 0xFFB347;
-            windowEmissiveIntensity = 0.4;
+            windowEmissiveIntensity = 0.45;
             hasBalcony = true;
             hasColumns = true;
+            hasArchedWindows = true;
+            hasOrnateFrieze = true;
+            roofTint = new THREE.Color(styleDef.roof || 0x2E7D52);
             break;
         case 'industrial':
-            baseColor = new THREE.Color(0x6B6B6B);
-            facadeRoughness = 0.7;
+            baseColor = new THREE.Color(0x795548);
+            facadeRoughness = 0.88;
             roofStyle = 'shed';
             windowStyle = 'ribbon';
-            windowColor = 0x87CEEB;
-            windowEmissive = 0x4FC3F7;
-            windowEmissiveIntensity = 0.15;
+            windowColor = 0xB3E5FC;
+            windowEmissive = 0x0277BD;
+            windowEmissiveIntensity = 0.2;
+            hasSteelFrame = true;
+            roofTint = new THREE.Color(0x546E7A);
             break;
         case 'gym':
-            facadeRoughness = 0.5;
-            roofStyle = 'gabled';
-            windowColor = 0xE8F5E9;
-            windowEmissive = 0x81C784;
-            windowEmissiveIntensity = 0.2;
+            facadeRoughness = 0.55;
+            roofStyle = 'barrel';
+            baseColor = color.clone().lerp(new THREE.Color(styleDef.facade || 0xB0BEC5), 0.4);
+            windowColor = 0xC8E6C9;
+            windowEmissive = 0x43A047;
+            windowEmissiveIntensity = 0.25;
+            hasCorrugated = true;
+            roofTint = new THREE.Color(0x78909C);
             break;
         case 'field':
             facadeRoughness = 0.8;
             roofStyle = 'flat';
             break;
         case 'pavilion':
-            facadeRoughness = 0.3;
+            facadeRoughness = 0.35;
             roofStyle = 'pyramid';
-            windowColor = 0xE8F5E9;
-            windowEmissive = 0xA5D6A7;
-            windowEmissiveIntensity = 0.3;
+            baseColor = color.clone().lerp(new THREE.Color(styleDef.facade || 0xB2DFDB), 0.35);
+            windowColor = 0xE0F2F1;
+            windowEmissive = 0x00897B;
+            windowEmissiveIntensity = 0.15;
             hasColumns = true;
+            hasOpenPavilion = true;
+            roofTint = new THREE.Color(styleDef.roof || 0xE0F2F1);
             break;
         default:
             break;
@@ -637,6 +682,7 @@ function createBuilding3D(b) {
         });
         
         campusGroup.add(fieldGroup);
+        fieldGroup.rotation.y = degToRad(b.rotation);
         
         buildingMeshes[b.id] = {
             group: fieldGroup,
@@ -654,12 +700,13 @@ function createBuilding3D(b) {
         const floorGroup = new THREE.Group();
         floorGroup.position.y = (f - 1) * FLOOR_HEIGHT;
         
+        const slabOpacity = hasOpenPavilion ? 0.35 : 1;
         const baseMat = new THREE.MeshStandardMaterial({
             color: baseColor.clone(),
             roughness: facadeRoughness,
-            metalness: 0.1,
-            transparent: true,
-            opacity: 1
+            metalness: hasGlassCurtain ? 0.35 : 0.1,
+            transparent: hasOpenPavilion,
+            opacity: slabOpacity
         });
         
         const slab = new THREE.Mesh(
@@ -683,6 +730,49 @@ function createBuilding3D(b) {
             );
             stripe.position.y = FLOOR_HEIGHT / 2;
             floorGroup.add(stripe);
+        }
+        
+        if (hasCorrugated) {
+            const ribMat = new THREE.MeshStandardMaterial({ color: 0x90A4AE, roughness: 0.7, metalness: 0.4 });
+            for (let rib = -b.w / 2 + 0.4; rib < b.w / 2; rib += 0.55) {
+                const ribMesh = new THREE.Mesh(new THREE.BoxGeometry(0.06, FLOOR_HEIGHT - 0.1, b.d + 0.04), ribMat);
+                ribMesh.position.set(rib, FLOOR_HEIGHT / 2, 0);
+                floorGroup.add(ribMesh);
+            }
+        }
+
+        if (hasSteelFrame) {
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x37474F, roughness: 0.4, metalness: 0.7 });
+            [-1, 1].forEach(side => {
+                const beam = new THREE.Mesh(new THREE.BoxGeometry(0.12, FLOOR_HEIGHT, b.d + 0.1), frameMat);
+                beam.position.set(side * (b.w / 2 - 0.06), FLOOR_HEIGHT / 2, 0);
+                floorGroup.add(beam);
+            });
+        }
+
+        if (hasOrnateFrieze) {
+            const friezeMat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, roughness: 0.35, metalness: 0.5 });
+            const frieze = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.2, 0.12, 0.15), friezeMat);
+            frieze.position.set(0, FLOOR_HEIGHT - 0.25, b.d / 2 + 0.08);
+            floorGroup.add(frieze);
+        }
+
+        if (hasPediment && f === 1) {
+            const pedimentMat = new THREE.MeshStandardMaterial({
+                color: roofTint ? roofTint.clone() : baseColor.clone().multiplyScalar(0.65),
+                roughness: 0.75
+            });
+            const pedShape = new THREE.Shape();
+            pedShape.moveTo(-b.w / 2 - 0.2, 0);
+            pedShape.lineTo(0, 0.9);
+            pedShape.lineTo(b.w / 2 + 0.2, 0);
+            pedShape.lineTo(-b.w / 2 - 0.2, 0);
+            const pedMesh = new THREE.Mesh(
+                new THREE.ExtrudeGeometry(pedShape, { depth: 0.15, bevelEnabled: false }),
+                pedimentMat
+            );
+            pedMesh.position.set(0, FLOOR_HEIGHT - 0.05, b.d / 2 + 0.05);
+            floorGroup.add(pedMesh);
         }
         
         if (hasColumns) {
@@ -801,31 +891,63 @@ function createBuilding3D(b) {
         
         for (let c = 0; c < windowCols; c++) {
             const offsetX = b.x - b.w/2 + (c + 0.5) * (b.w / windowCols);
+            const winX = offsetX - b.x;
             
             const winFront = new THREE.Mesh(
                 new THREE.BoxGeometry(winW, winH, 0.05), 
                 windowMat
             );
-            winFront.position.set(offsetX - b.x, FLOOR_HEIGHT/2, b.d/2 + 0.02);
-            winFront.castShadow = true;
-            windowGroup.add(winFront);
+            winFront.position.set(winX, FLOOR_HEIGHT/2, b.d/2 + 0.02);
             
-            const winBack = winFront.clone();
-            winBack.position.z = -b.d/2 - 0.02;
-            windowGroup.add(winBack);
+            if (!hasGlassCurtain) {
+                winFront.castShadow = true;
+                windowGroup.add(winFront);
+                const winBack = winFront.clone();
+                winBack.position.z = -b.d/2 - 0.02;
+                windowGroup.add(winBack);
+            }
             
             if (style === 'brutalist') {
                 const concreteFrame = new THREE.MeshStandardMaterial({
-                    color: 0x7A7A7A,
-                    roughness: 0.9
+                    color: 0x616161,
+                    roughness: 0.95
                 });
                 const frame = new THREE.Mesh(
-                    new THREE.BoxGeometry(winW + 0.15, winH + 0.15, 0.06),
+                    new THREE.BoxGeometry(winW + 0.2, winH + 0.2, 0.08),
                     concreteFrame
                 );
                 frame.position.copy(winFront.position);
                 frame.position.z -= 0.01;
                 windowGroup.add(frame);
+            } else if (hasArchedWindows) {
+                const archMat = new THREE.MeshStandardMaterial({ color: windowColor, emissive: windowEmissive, emissiveIntensity: windowEmissiveIntensity });
+                const arch = new THREE.Mesh(new THREE.BoxGeometry(winW, winH * 0.75, 0.05), archMat);
+                arch.position.copy(winFront.position);
+                arch.position.y -= winH * 0.12;
+                windowGroup.add(arch);
+                const frameMat = new THREE.MeshStandardMaterial({ color: style === 'liberty' ? 0xD4AF37 : 0xFFFFFF, roughness: 0.35 });
+                const frameFront = new THREE.Mesh(new THREE.BoxGeometry(winW + 0.1, winH + 0.1, 0.03), frameMat);
+                frameFront.position.copy(winFront.position);
+                frameFront.position.z -= 0.03;
+                windowGroup.add(frameFront);
+            } else if (hasGlassCurtain) {
+                const glassPanel = new THREE.Mesh(
+                    new THREE.BoxGeometry(winW + 0.05, FLOOR_HEIGHT - 0.35, 0.04),
+                    new THREE.MeshStandardMaterial({
+                        color: 0xB3E5FC,
+                        roughness: 0.05,
+                        metalness: 0.2,
+                        transparent: true,
+                        opacity: 0.75,
+                        emissive: 0x0288D1,
+                        emissiveIntensity: 0.15
+                    })
+                );
+                glassPanel.position.set(winX, FLOOR_HEIGHT / 2, b.d / 2 + 0.03);
+                windowGroup.add(glassPanel);
+                const glassBack = glassPanel.clone();
+                glassBack.position.z = -b.d / 2 - 0.03;
+                windowGroup.add(glassBack);
             } else {
                 const frameMat = new THREE.MeshStandardMaterial({ 
                     color: 0xFFFFFF, 
@@ -887,7 +1009,8 @@ function createBuilding3D(b) {
         
         const floorRooms = ROOMS.filter(r => r.building === b.id && r.floor === f);
         floorRooms.forEach(r => {
-            const rel = clampRoomPosition(r.x - b.x, r.z - b.z, r.w, r.d, b.w, b.d);
+            const local = toBuildingLocal(r.x, r.z, b);
+            const rel = clampRoomPosition(local.x, local.z, r.w, r.d, b.w, b.d);
             const roomMat = new THREE.MeshStandardMaterial({
                 color: new THREE.Color(r.color),
                 roughness: 0.5,
@@ -1038,7 +1161,8 @@ function createBuilding3D(b) {
         const doorMat = new THREE.MeshStandardMaterial({ color: 0x6B5E4F });
         floorRooms.forEach(r => {
             if (r.type === 'special' && (r.id.endsWith('SC') || r.id.endsWith('WC'))) return;
-            const rel = clampRoomPosition(r.x - b.x, r.z - b.z, r.w, r.d, b.w, b.d);
+            const local = toBuildingLocal(r.x, r.z, b);
+            const rel = clampRoomPosition(local.x, local.z, r.w, r.d, b.w, b.d);
             const door = new THREE.Mesh(
                 new THREE.BoxGeometry(0.1, 0.16, 0.45),
                 doorMat
@@ -1069,8 +1193,9 @@ function createBuilding3D(b) {
     roofGroup.position.y = floors * FLOOR_HEIGHT;
     
     const roofMat = new THREE.MeshStandardMaterial({ 
-        color: baseColor.clone().multiplyScalar(0.7), 
-        roughness: facadeRoughness * 1.2 
+        color: roofTint ? roofTint.clone() : baseColor.clone().multiplyScalar(0.7), 
+        roughness: facadeRoughness * 1.2,
+        metalness: style === 'gym' ? 0.45 : 0.05
     });
     
     let roofMesh;
@@ -1165,6 +1290,21 @@ function createBuilding3D(b) {
             roofGroup.add(top);
             break;
         }
+        case 'barrel': {
+            const barrelGeo = new THREE.CylinderGeometry(b.d / 2 + 0.3, b.d / 2 + 0.3, b.w + 0.4, 16, 1, false, 0, Math.PI);
+            roofMesh = new THREE.Mesh(barrelGeo, roofMat);
+            roofMesh.rotation.z = Math.PI / 2;
+            roofMesh.position.y = 0.35;
+            roofMesh.castShadow = true;
+            roofGroup.add(roofMesh);
+            const clerestory = new THREE.Mesh(
+                new THREE.BoxGeometry(b.w - 1, 0.25, 0.15),
+                new THREE.MeshStandardMaterial({ color: 0xE8F5E9, emissive: 0x43A047, emissiveIntensity: 0.2 })
+            );
+            clerestory.position.set(0, 0.55, b.d / 2 + 0.08);
+            roofGroup.add(clerestory);
+            break;
+        }
         default: {
             roofMesh = new THREE.Mesh(
                 new THREE.BoxGeometry(b.w + 0.4, 0.4, b.d + 0.4),
@@ -1188,6 +1328,7 @@ function createBuilding3D(b) {
     bGroup.add(roofGroup);
     
     bGroup.position.set(b.x, 0, b.z);
+    bGroup.rotation.y = degToRad(b.rotation);
     
     buildingMeshes[b.id] = {
         group: bGroup,
@@ -1195,7 +1336,8 @@ function createBuilding3D(b) {
         roofGroup: roofGroup,
         floorsCount: floors,
         baseColor: baseColor,
-        w: b.w, d: b.d, x: b.x, z: b.z
+        w: b.w, d: b.d, x: b.x, z: b.z,
+        rotation: b.rotation || 0
     };
     
     return bGroup;
@@ -1472,24 +1614,44 @@ function explodeBuilding(bldId, activeFloor) {
 
 function collapseBuilding(bldId) {
     const m = buildingMeshes[bldId];
-    if (!m) return;
-    
+
+    if (!m) {
+        console.warn(`collapseBuilding: edificio "${bldId}" non trovato in buildingMeshes.`);
+        return;
+    }
+
+    if (!Array.isArray(m.floorGroups)) {
+        console.error(`collapseBuilding: floorGroups mancante o non valido per "${bldId}".`, m);
+        return;
+    }
+
     for (let f = 1; f <= m.floorsCount; f++) {
         const fg = m.floorGroups[f - 1];
+
+        if (!fg) {
+            console.error(`collapseBuilding: floorGroup ${f} mancante per "${bldId}".`, m);
+            continue;
+        }
+
+        if (!fg.userData) {
+            fg.userData = {};
+        }
+
         fg.userData.targetY = (f - 1) * FLOOR_HEIGHT;
-        
+
         fg.children.forEach(child => {
             child.visible = true;
         });
-        
+
         const shellMesh = fg.children.find(c => c.userData?.type === 'shell');
         if (shellMesh) {
             applyShellMaterial(shellMesh, 1, m.baseColor);
         }
-        
+
         const roomsGroup = fg.children.find(c => c.name === 'rooms');
         if (roomsGroup) {
             roomsGroup.visible = false;
+
             roomsGroup.children.forEach(child => {
                 if (child.isMesh && child.material) {
                     child.material.transparent = false;
@@ -1499,9 +1661,19 @@ function collapseBuilding(bldId) {
             });
         }
     }
-    
+
+    if (!m.roofGroup) {
+        console.error(`collapseBuilding: roofGroup mancante per "${bldId}".`, m);
+        return;
+    }
+
+    if (!m.roofGroup.userData) {
+        m.roofGroup.userData = {};
+    }
+
     m.roofGroup.userData.targetY = m.floorsCount * FLOOR_HEIGHT;
     m.roofGroup.visible = true;
+
     m.roofGroup.children.forEach(child => {
         if (child.material) {
             child.material.transparent = false;

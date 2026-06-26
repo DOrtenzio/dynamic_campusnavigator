@@ -66,10 +66,15 @@ app.get('/api/schedule/:classId', (req, res) => {
   const schedule = readDB().schedule || {};
   res.json(schedule[req.params.classId] || {});
 });
+app.get('/api/campus-elements', (req, res) => {
+  const { readDB } = require('./utils/db');
+  res.json(readDB().campusElements || []);
+});
 
 app.use('/api/teachers', authMiddleware, require('./routes/teachers'));
 app.use('/api/rooms', authMiddleware, require('./routes/rooms'));
 app.use('/api/buildings', authMiddleware, require('./routes/buildings'));
+app.use('/api/campus-elements', authMiddleware, require('./routes/campusElements'));
 app.use('/api/schedule', authMiddleware, require('./routes/schedule'));
 app.use('/api/csv', authMiddleware, require('./routes/csv'));
 

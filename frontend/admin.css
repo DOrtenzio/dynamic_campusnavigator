@@ -548,46 +548,174 @@
 
 /* ── Style picker architettonico ── */
 .admin-style-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
 }
 
 .admin-style-opt {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 8px 12px;
-  border: 1.5px solid #E0D8CE;
-  border-radius: 10px;
+  gap: 4px;
+  padding: 10px 8px 8px;
+  border: 2px solid #E0D8CE;
+  border-radius: 12px;
   cursor: pointer;
   background: #fff;
-  transition: all 0.15s;
-  min-width: 72px;
+  transition: all 0.18s ease;
   font-family: 'Outfit', sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-style-opt::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--style-accent, #D4A373);
+  opacity: 0.6;
 }
 
 .admin-style-opt:hover {
-  border-color: #aaa;
+  border-color: var(--style-accent, #aaa);
   background: #faf7f2;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
 
 .admin-style-opt.selected {
-  border-color: #D4A373;
-  background: #FFF8EE;
-  box-shadow: 0 0 0 2px #D4A37344;
+  border-color: var(--style-accent, #D4A373);
+  background: #FFFBF5;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--style-accent, #D4A373) 25%, transparent);
 }
 
-.admin-style-icon {
-  font-size: 22px;
-  line-height: 1;
+.admin-style-preview {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-style-preview svg {
+  width: 48px;
+  height: 48px;
+  display: block;
 }
 
 .admin-style-name {
-  font-size: 11px;
-  font-weight: 600;
-  color: #555;
+  font-size: 12px;
+  font-weight: 700;
+  color: #333;
   text-align: center;
+  line-height: 1.2;
+}
+
+.admin-style-desc {
+  font-size: 9px;
+  font-weight: 400;
+  color: #888;
+  text-align: center;
+  line-height: 1.25;
+  max-width: 100%;
+}
+
+.admin-rotation-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-rotate-btn {
+  font-size: 13px;
+  padding: 8px 14px;
+}
+
+.admin-rotation-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #555;
+  min-width: 40px;
+}
+
+.admin-campus-features {
+  background: #faf7f2;
+  border: 1.5px solid #E0D8CE;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+}
+
+.admin-campus-features-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.admin-campus-features-count {
+  font-weight: 500;
+  color: #888;
+  font-size: 12px;
+}
+
+.admin-campus-features-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.admin-campus-feature-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #fff;
+  border: 1px solid #E0D8CE;
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: 'Outfit', sans-serif;
+}
+
+.admin-feature-type {
+  text-transform: capitalize;
+  font-weight: 700;
+  color: #666;
+}
+
+.admin-feature-label {
+  color: #333;
+}
+
+.admin-feature-pos {
+  color: #aaa;
+  font-size: 10px;
+}
+
+.admin-campus-features-note {
+  font-size: 11px;
+  color: #888;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.admin-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 8px;
+}
+
+.admin-map2d-legend {
+  flex-wrap: wrap;
+  max-width: 70%;
 }

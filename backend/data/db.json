@@ -7,8 +7,8 @@
       "color": "#FF7E67",
       "floors": 4,
       "rooms": 120,
-      "x": 0,
-      "z": 0,
+      "x": 16,
+      "z": -11.5,
       "w": 12,
       "d": 6,
       "icon": "main"
@@ -20,8 +20,8 @@
       "color": "#58A4B0",
       "floors": 3,
       "rooms": 80,
-      "x": -18,
-      "z": 0,
+      "x": -18.5,
+      "z": -1,
       "w": 8,
       "d": 6,
       "icon": "wing"
@@ -33,8 +33,8 @@
       "color": "#FC642D",
       "floors": 3,
       "rooms": 60,
-      "x": 18,
-      "z": 0,
+      "x": 24.5,
+      "z": 2.5,
       "w": 8,
       "d": 6,
       "icon": "wing"
@@ -46,11 +46,12 @@
       "color": "#9C89B8",
       "floors": 2,
       "rooms": 40,
-      "x": 0,
+      "x": -8,
       "z": -16,
       "w": 10,
       "d": 5,
-      "icon": "wing"
+      "icon": "industrial",
+      "rotation": 0
     },
     {
       "id": "GYM1",
@@ -60,10 +61,11 @@
       "floors": 1,
       "rooms": 4,
       "x": -18,
-      "z": 14,
+      "z": 18,
       "w": 7,
       "d": 5,
-      "icon": "gym"
+      "icon": "industrial",
+      "rotation": 0
     },
     {
       "id": "GYM2",
@@ -72,24 +74,182 @@
       "color": "#E8A87C",
       "floors": 1,
       "rooms": 3,
-      "x": 18,
-      "z": 14,
+      "x": 38.5,
+      "z": 20,
       "w": 7,
       "d": 5,
-      "icon": "pavilion"
+      "icon": "liberty",
+      "rotation": 180
     },
     {
       "id": "FIELD",
       "name": "Campo da calcio",
       "subtitle": "Esterno",
       "color": "#88B04B",
-      "floors": 1,
+      "floors": 0,
       "rooms": 1,
-      "x": 0,
-      "z": 18,
+      "x": 41.5,
+      "z": 3,
       "w": 16,
       "d": 10,
-      "icon": "field"
+      "icon": "field",
+      "rotation": 0
+    }
+  ],
+  "campusElements": [
+    {
+      "id": "sw-main",
+      "type": "sidewalk",
+      "label": "Main walkway",
+      "x": 0,
+      "z": 0,
+      "w": 38,
+      "d": 2.5,
+      "rotation": 0
+    },
+    {
+      "id": "sw-north",
+      "type": "sidewalk",
+      "label": "North path",
+      "x": 0,
+      "z": -8,
+      "w": 2.5,
+      "d": 20,
+      "rotation": 0
+    },
+    {
+      "id": "sw-south",
+      "type": "sidewalk",
+      "label": "South path",
+      "x": 0,
+      "z": 9,
+      "w": 2.5,
+      "d": 20,
+      "rotation": 0
+    },
+    {
+      "id": "sw-west",
+      "type": "sidewalk",
+      "label": "West branch",
+      "x": -18,
+      "z": 7,
+      "w": 2.5,
+      "d": 16,
+      "rotation": 0
+    },
+    {
+      "id": "sw-east",
+      "type": "sidewalk",
+      "label": "East branch",
+      "x": 18,
+      "z": 7,
+      "w": 2.5,
+      "d": 16,
+      "rotation": 0
+    },
+    {
+      "id": "lamp-w",
+      "type": "streetlight",
+      "label": "West lamp",
+      "x": -10,
+      "z": 0,
+      "rotation": 0
+    },
+    {
+      "id": "lamp-e",
+      "type": "streetlight",
+      "label": "East lamp",
+      "x": 22,
+      "z": 14,
+      "rotation": 0
+    },
+    {
+      "id": "lamp-n",
+      "type": "streetlight",
+      "label": "North lamp",
+      "x": 0,
+      "z": -12,
+      "rotation": 0
+    },
+    {
+      "id": "lamp-s",
+      "type": "streetlight",
+      "label": "South lamp",
+      "x": 14,
+      "z": 14,
+      "rotation": 0
+    },
+    {
+      "id": "bench-1",
+      "type": "bench",
+      "label": "Bench NE",
+      "x": -5,
+      "z": 5,
+      "rotation": 45
+    },
+    {
+      "id": "bench-2",
+      "type": "bench",
+      "label": "Bench SE",
+      "x": 5,
+      "z": 5,
+      "rotation": 120
+    },
+    {
+      "id": "bench-3",
+      "type": "bench",
+      "label": "Bench NW",
+      "x": -8,
+      "z": -3,
+      "rotation": 200
+    },
+    {
+      "id": "bench-4",
+      "type": "bench",
+      "label": "Bench SW",
+      "x": 5.5,
+      "z": -3,
+      "rotation": 310
+    },
+    {
+      "id": "flower-1",
+      "type": "flowerbed",
+      "label": "Flower bed 1",
+      "x": -6,
+      "z": 8,
+      "rotation": 0
+    },
+    {
+      "id": "flower-2",
+      "type": "flowerbed",
+      "label": "Flower bed 2",
+      "x": 6,
+      "z": 8,
+      "rotation": 0
+    },
+    {
+      "id": "flower-3",
+      "type": "flowerbed",
+      "label": "Flower bed 3",
+      "x": -12,
+      "z": 5,
+      "rotation": 0
+    },
+    {
+      "id": "flower-4",
+      "type": "flowerbed",
+      "label": "Flower bed 4",
+      "x": 30,
+      "z": -8.5,
+      "rotation": 0
+    },
+    {
+      "id": "fountain-1",
+      "type": "fountain",
+      "label": "Central fountain",
+      "x": 18,
+      "z": 18,
+      "rotation": 0
     }
   ],
   "rooms": [
