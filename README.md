@@ -124,7 +124,7 @@ Read endpoints are public for the main app. All write operations require a Beare
 
 ## AI Chatbot
 
-NaVIgate includes an optional AI assistant sidebar powered by **Ollama + Qwen 2.5 (1.5b)** — a ~400 MB model that runs entirely on the server CPU with no GPU and no internet connection required.
+Navi^FROM^gate includes an optional AI assistant sidebar powered by **Ollama + Qwen 2.5 (1.5b)** — a ~400 MB model that runs entirely on the server CPU with no GPU and no internet connection required.
 
 ### How it works
 
