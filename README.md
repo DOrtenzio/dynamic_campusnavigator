@@ -42,7 +42,7 @@
 
 ## Overview
 
-**NaVIgate** is a self-hosted web application for exploring a school campus in 3D, searching rooms, teachers and timetables, and navigating between buildings with step-by-step indoor directions.
+**Navi^FROM^gate** is a self-hosted web application for exploring a school campus in 3D, searching rooms, teachers and timetables, and navigating between buildings with step-by-step indoor directions.
 
 An integrated **admin panel** lets authorized staff manage buildings, rooms, teachers, schedules, and CSV imports — plus toggle an optional AI assistant at any time. The entire stack (frontend + backend + AI) runs as a single Node.js process with no external cloud dependencies.
 
