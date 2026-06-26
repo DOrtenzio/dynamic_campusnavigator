@@ -30,6 +30,8 @@ Navi^FROM^gate is a web app for exploring a school campus in 3D, searching rooms
 
 The backend serves both the REST API and the static frontend from a single Node.js process.
 
+<img width="1827" height="845" alt="image" src="https://github.com/user-attachments/assets/3790e6d2-672e-4da2-bc06-907c47972bae" />
+
 ## Features
 
 - **3D campus map** with building overview and per-floor interior view
@@ -38,6 +40,8 @@ The backend serves both the REST API and the static frontend from a single Node.
 - **Admin panel** with PSK + TOTP (or demo code) authentication
 - **JSON persistence** with optional seed data (~300 rooms, 150 teachers)
 - **CSV import/export** for teachers and rooms
+
+<img width="1895" height="867" alt="image" src="https://github.com/user-attachments/assets/360fb840-f85a-4415-ac97-4ca91ab65b29" />
 
 ## Architecture
 
@@ -68,6 +72,9 @@ backend/           Express API + static file server
 
 Read endpoints are public for the main app. Write operations require a Bearer token from admin login.
 
+<img width="1882" height="852" alt="image" src="https://github.com/user-attachments/assets/0e8f921f-2480-4656-bff4-7c8c60dbfd1e" />
+
+
 ### Environment variables
 
 Copy `backend/.env.example` to `backend/.env`:
@@ -80,6 +87,8 @@ Copy `backend/.env.example` to `backend/.env`:
 | `JWT_SECRET` | JWT signing key |
 
 **Demo credentials:** PSK `admin123`, Auth (TOTP_SECRET) `JBSWY3DPEHPK3PXP`
+
+<img width="1697" height="812" alt="image" src="https://github.com/user-attachments/assets/026d7540-16e4-4e31-be84-b22913cf3e12" />
 
 ## Setup
 
