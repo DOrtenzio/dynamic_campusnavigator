@@ -123,6 +123,8 @@ docker run -p 3000:3000 \
 
 Mount a volume on `/app/backend/data` to persist `db.json` between container restarts.
 
+<img width="792" height="192" alt="Registrazione 2026-06-26 185931" src="https://github.com/user-attachments/assets/cac5877c-bd7c-4856-85d9-3a41381c2cb4" />
+
 ## Deployment
 
 - Single container: the Dockerfile bundles frontend + backend
