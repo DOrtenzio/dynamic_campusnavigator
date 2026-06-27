@@ -12,6 +12,7 @@ let currentLookAt = new THREE.Vector3(0, 0, 0);
 let targetCamOffset = new THREE.Vector3(38, 38, 38);
 let currentCamOffset = new THREE.Vector3(38, 38, 38);
 let animFrame;
+let rotationLocked = false;
 
 const WAYPOINTS = {
     'A': new THREE.Vector3(0, 0.1, 0),
@@ -1515,6 +1516,7 @@ function zoomMap(dir) {
 }
 
 function rotateMap() {
+    if (rotationLocked) return;
     targetRotation += Math.PI / 4;
 }
 
@@ -1635,23 +1637,14 @@ function explodeBuilding(bldId, activeFloor) {
 function collapseBuilding(bldId) {
     const m = buildingMeshes[bldId];
 
-    if (!m) {
-        console.warn(`collapseBuilding: edificio "${bldId}" non trovato in buildingMeshes.`);
-        return;
-    }
+    if (!m) return;
 
-    if (!Array.isArray(m.floorGroups)) {
-        console.error(`collapseBuilding: floorGroups mancante o non valido per "${bldId}".`, m);
-        return;
-    }
+    if (!Array.isArray(m.floorGroups)) return;
 
     for (let f = 1; f <= m.floorsCount; f++) {
         const fg = m.floorGroups[f - 1];
 
-        if (!fg) {
-            console.error(`collapseBuilding: floorGroup ${f} mancante per "${bldId}".`, m);
-            continue;
-        }
+        if (!fg) continue;
 
         if (!fg.userData) {
             fg.userData = {};
@@ -1682,10 +1675,7 @@ function collapseBuilding(bldId) {
         }
     }
 
-    if (!m.roofGroup) {
-        console.error(`collapseBuilding: roofGroup mancante per "${bldId}".`, m);
-        return;
-    }
+    if (!m.roofGroup) return;
 
     if (!m.roofGroup.userData) {
         m.roofGroup.userData = {};
@@ -1704,12 +1694,10 @@ function collapseBuilding(bldId) {
 }
 
 function draw3DNavigationPath(startObj, endRoom) {
-    // Pulisce il percorso precedente
     while (pathGroup.children.length > 0) pathGroup.remove(pathGroup.children[0]);
 
     if (!startObj || !endRoom) return null;
 
-    // --- Punto di partenza ---
     let startPos = new THREE.Vector3(0, 0.1, 0);
     let startBldId = 'A';
     let startLabel = 'Starting point';
@@ -1985,11 +1973,15 @@ function onPointerMove(e) {
         targetLookAt.x -= (screenX * cos - screenZ * sin);
         targetLookAt.z -= (screenX * sin + screenZ * cos);
     } else {
-        targetRotation += dx * 0.005;
+        if (!rotationLocked) targetRotation += dx * 0.005;
     }
     
     lastPointer.x = e.clientX;
     lastPointer.y = e.clientY;
+}
+
+function applyMapSettings(settings) {
+    rotationLocked = !!(settings && settings.lockMapRotation);
 }
 
 function onPointerUp() {
@@ -2175,6 +2167,37 @@ function animate() {
             if (labelsContainer.children.length) labelsContainer.innerHTML = '';
         }
     }
+
+    const bldLabelsContainer = document.getElementById('buildingLabelsContainer');
+  if (bldLabelsContainer && !activeIndoorBuilding) {
+    const canvas = renderer.domElement;
+    const seenBldIds = new Set();
+    BUILDINGS.forEach(b => {
+      const roofY = (Math.max(1, b.floors || 1)) * FLOOR_HEIGHT + 0.5;
+      const worldPos = new THREE.Vector3(b.x, roofY, b.z);
+      worldPos.project(camera);
+      if (worldPos.z > 1) return;
+      const x = (worldPos.x * 0.5 + 0.5) * canvas.clientWidth;
+      const y = (worldPos.y * -0.5 + 0.5) * canvas.clientHeight;
+      seenBldIds.add(b.id);
+      let el = bldLabelsContainer.querySelector(`[data-bld-id="${b.id}"]`);
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'building-label';
+        el.dataset.bldId = b.id;
+        bldLabelsContainer.appendChild(el);
+      }
+      el.textContent = b.name || b.id;
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      el.style.display = 'block';
+    });
+    bldLabelsContainer.querySelectorAll('.building-label').forEach(el => {
+      if (!seenBldIds.has(el.dataset.bldId)) el.remove();
+    });
+  } else if (bldLabelsContainer && activeIndoorBuilding) {
+    bldLabelsContainer.innerHTML = '';
+  }
     
     renderer.render(scene, camera);
 }

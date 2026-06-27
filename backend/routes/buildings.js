@@ -1,45 +1,36 @@
 const express = require('express');
-const { readDB, writeDB } = require('../utils/db');
+const { getDb, readBuildings, upsertRow } = require('../utils/db');
 const router = express.Router();
 
 router.get('/', (req, res) => {
-  const db = readDB();
-  res.json(db.buildings);
+  res.json(readBuildings());
 });
 
 router.get('/:id', (req, res) => {
-  const db = readDB();
-  const bld = db.buildings.find(b => b.id === req.params.id);
+  const bld = readBuildings().find(b => b.id === req.params.id);
   if (!bld) return res.status(404).json({ error: 'Non trovato' });
   res.json(bld);
 });
 
 router.post('/', (req, res) => {
-  const db = readDB();
   const newBld = { ...req.body, id: req.body.id || `B${Date.now()}` };
-  db.buildings.push(newBld);
-  writeDB(db);
+  upsertRow('buildings', newBld);
   res.status(201).json(newBld);
 });
 
 router.put('/:id', (req, res) => {
-  const db = readDB();
-  const index = db.buildings.findIndex(b => b.id === req.params.id);
-  if (index === -1) return res.status(404).json({ error: 'Non trovato' });
-  db.buildings[index] = { ...db.buildings[index], ...req.body };
-  writeDB(db);
-  res.json(db.buildings[index]);
+  const existing = readBuildings().find(b => b.id === req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Non trovato' });
+  const updated = { ...existing, ...req.body, id: req.params.id };
+  upsertRow('buildings', updated);
+  res.json(updated);
 });
 
 router.delete('/:id', (req, res) => {
-  const db = readDB();
-  const id = req.params.id;
-  if (!db.buildings.some(b => b.id === id)) {
-    return res.status(404).json({ error: 'Non trovato' });
-  }
-  db.buildings = db.buildings.filter(b => b.id !== id);
-  db.rooms = db.rooms.filter(r => r.building !== id);
-  writeDB(db);
+  const db = getDb();
+  const existing = db.prepare('SELECT id FROM buildings WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Non trovato' });
+  db.prepare('DELETE FROM buildings WHERE id = ?').run(req.params.id);
   res.status(204).send();
 });
 

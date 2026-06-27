@@ -1,40 +1,32 @@
 const express = require('express');
-const { readDB, writeDB } = require('../utils/db');
+const { getDb, readCampusElements, upsertRow } = require('../utils/db');
 const router = express.Router();
 
 router.get('/', (req, res) => {
-  const db = readDB();
-  res.json(db.campusElements || []);
+  res.json(readCampusElements());
 });
 
 router.post('/', (req, res) => {
-  const db = readDB();
-  if (!db.campusElements) db.campusElements = [];
   const el = { ...req.body, id: req.body.id || `el-${Date.now()}` };
-  db.campusElements.push(el);
-  writeDB(db);
+  upsertRow('campus_elements', el);
   res.status(201).json(el);
 });
 
 router.put('/:id', (req, res) => {
-  const db = readDB();
-  if (!db.campusElements) db.campusElements = [];
-  const index = db.campusElements.findIndex(e => e.id === req.params.id);
-  if (index === -1) return res.status(404).json({ error: 'Not found' });
-  db.campusElements[index] = { ...db.campusElements[index], ...req.body };
-  writeDB(db);
-  res.json(db.campusElements[index]);
+  const existing = readCampusElements().find(e => e.id === req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+  const updated = { ...existing, ...req.body, id: req.params.id };
+  upsertRow('campus_elements', updated);
+  res.json(updated);
 });
 
 router.delete('/:id', (req, res) => {
-  const db = readDB();
-  if (!db.campusElements) db.campusElements = [];
-  const before = db.campusElements.length;
-  db.campusElements = db.campusElements.filter(e => e.id !== req.params.id);
-  if (db.campusElements.length === before) {
+  const db = getDb();
+  const existing = db.prepare('SELECT id FROM campus_elements WHERE id = ?').get(req.params.id);
+  if (!existing) {
     return res.status(404).json({ error: 'Not found' });
   }
-  writeDB(db);
+  db.prepare('DELETE FROM campus_elements WHERE id = ?').run(req.params.id);
   res.status(204).send();
 });
 

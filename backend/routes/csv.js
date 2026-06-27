@@ -2,20 +2,20 @@ const express = require('express');
 const multer = require('multer');
 const csv = require('csv-parser');
 const { Readable } = require('stream');
-const { readDB, writeDB } = require('../utils/db');
+const { readTeachers, readRooms, upsertRow } = require('../utils/db');
 const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Import teachers
 router.post('/import/teachers', upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'File mancante.' });
   const results = [];
   const bufferStream = Readable.from(req.file.buffer.toString());
   bufferStream
     .pipe(csv())
     .on('data', data => results.push(data))
     .on('end', () => {
-      const db = readDB();
       results.forEach(row => {
         const teacher = {
           id: row.ID || `T${Date.now()}`,
@@ -28,20 +28,17 @@ router.post('/import/teachers', upload.single('file'), (req, res) => {
           floor: parseInt(row.Piano) || 1,
           office: row.Ufficio || ''
         };
-        const existing = db.teachers.findIndex(t => t.id === teacher.id);
-        if (existing >= 0) db.teachers[existing] = teacher;
-        else db.teachers.push(teacher);
+        upsertRow('teachers', teacher);
       });
-      writeDB(db);
       res.json({ imported: results.length });
     });
 });
 
 // Export teachers
 router.get('/export/teachers', (req, res) => {
-  const db = readDB();
+  const teachers = readTeachers();
   const headers = ['ID','Nome','Dipartimento','Materia','Edificio','Piano','Ufficio'];
-  const rows = db.teachers.map(t => [t.id, t.name, t.department, t.subject, t.building, t.floor, t.office]);
+  const rows = teachers.map(t => [t.id, t.name, t.department, t.subject, t.building, t.floor, t.office]);
   const csvContent = [headers, ...rows].map(r => r.join(',')).join('\n');
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', 'attachment; filename=professori.csv');
@@ -49,13 +46,13 @@ router.get('/export/teachers', (req, res) => {
 });
 
 router.post('/import/rooms', upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'File mancante.' });
   const results = [];
   const bufferStream = Readable.from(req.file.buffer.toString());
   bufferStream
     .pipe(csv())
     .on('data', data => results.push(data))
     .on('end', () => {
-      const db = readDB();
       results.forEach(row => {
         const room = {
           id: row.ID || `R${Date.now()}`,
@@ -70,19 +67,16 @@ router.post('/import/rooms', upload.single('file'), (req, res) => {
           d: parseFloat(row.Profondita) || 2,
           color: parseInt(row.Colore, 16) || 0x93B5C6
         };
-        const existing = db.rooms.findIndex(r => r.id === room.id);
-        if (existing >= 0) db.rooms[existing] = room;
-        else db.rooms.push(room);
+        upsertRow('rooms', room);
       });
-      writeDB(db);
       res.json({ imported: results.length });
     });
 });
 
 router.get('/export/rooms', (req, res) => {
-  const db = readDB();
+  const rooms = readRooms();
   const headers = ['ID', 'Nome', 'Edificio', 'Piano', 'Tipo', 'Materia', 'X', 'Z', 'Larghezza', 'Profondita', 'Colore'];
-  const rows = db.rooms.map(r => [
+  const rows = rooms.map(r => [
     r.id, r.name, r.building, r.floor, r.type, r.subject || '',
     r.x, r.z, r.w, r.d, r.color
   ]);

@@ -36,19 +36,19 @@
 
       <div class="campus-stats">
         <div class="campus-stat">
-          <div class="val">7</div>
+          <div class="val stat-number" id="statBuildings">0</div>
           <div class="lbl">Buildings</div>
         </div>
         <div class="campus-stat">
-          <div class="val">300</div>
+          <div class="val stat-number" id="statRooms">0</div>
           <div class="lbl">Rooms</div>
         </div>
         <div class="campus-stat">
-          <div class="val">150</div>
+          <div class="val stat-number" id="statTeachers">0</div>
           <div class="lbl">Teachers</div>
         </div>
         <div class="campus-stat">
-          <div class="val">60</div>
+          <div class="val stat-number" id="statClasses">0</div>
           <div class="lbl">Classes</div>
         </div>
       </div>
@@ -139,7 +139,7 @@
           Classes
           <span class="badge">60</span>
         </button>
-        <button class="side-item" data-tab="ai-chat" id="chatToggleBtn" onclick="toggleChat()">
+        <button class="side-item" data-tab="ai-chat" id="chatToggleBtnNav" onclick="window.toggleChat()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/>
           </svg>
@@ -266,6 +266,7 @@
         </div>
 
         <div id="roomLabelsContainer"></div>
+        <div id="buildingLabelsContainer"></div>
 
         <div class="map-legend">
           <div class="legend-title">Buildings</div>
@@ -407,11 +408,11 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
           <span class="n-label">Prof</span>
         </button>
-        <button class="nav-item" data-tab="ai-chat" id="chatToggleBtnNav" onclick="toggleChat()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/>
-          </svg>
-          <span class="n-label">AI Chat</span>
+        <button class="nav-item" data-tab="ai-chat" id="chatToggleBtnNav" onclick="window.toggleChat()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/>
+            </svg>
+            <span class="n-label">AI Chat</span>
         </button>
         <button class="nav-item" onclick="openSearch()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -494,10 +495,14 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             Import CSV
           </button>
-          <button class="admin-nav-btn" onclick="adminTab('chatbot')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Chatbot
+         <button class="admin-nav-btn" onclick="adminTab('settings')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            Settings
           </button>
+
         </div>
         
         <div class="admin-content" id="adminContent"></div>

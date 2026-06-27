@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const authMiddleware = require('./utils/authMiddleware');
-const { readDB, writeDB } = require('./utils/db');
+const { readDB, readSettings, writeSettings } = require('./utils/db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -72,18 +72,13 @@ app.get('/api/campus-elements', (req, res) => {
 });
 
 app.get('/api/settings', (req, res) => {
-  res.json(readDB().settings || {});
+  res.json(readSettings());
 });
 
 app.patch('/api/settings', authMiddleware, (req, res) => {
-  const db = readDB();
-  db.settings = {
-    ...(db.settings || {}),
-    ...req.body
-  };
-
-  writeDB(db);
-  res.json(db.settings);
+  const merged = { ...readSettings(), ...req.body };
+  writeSettings(req.body);
+  res.json(merged);
 });
 
 app.use('/api/chatbot', require('./routes/chatbot'));

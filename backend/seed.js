@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { writeDB } = require('./utils/db');
+const { findOverlaps } = require('./utils/roomGeometry');
 
 const BUILDINGS = [
   { id: 'A', name: 'Palazzina A', subtitle: 'Sede centrale', color: '#FF7E67', floors: 4, rooms: 120, x: 0, z: 0, w: 12, d: 6, icon: 'main' },
@@ -15,67 +16,99 @@ const ROOMS = [];
 const SUBJECTS = ['Italiano','Matematica','Inglese','Storia','Geografia','Scienze','Fisica','Chimica','Filosofia','Arte','Musica','Diritto','Economia','Informatica','Latino','Greco','Religione'];
 const ROOM_TYPES = ['class','class','class','class','lab','lab','office'];
 
+function buildFloorGrid(bldData, cols, rows) {
+  const cellW = (bldData.w - 1.2) / cols;
+  const cellD = (bldData.d - 1.0) / rows;
+  const corridorW = 0.6;
+  const cells = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      let xOffset = (c - (cols - 1) / 2) * cellW;
+      if (c >= cols / 2) xOffset += corridorW;
+      else xOffset -= corridorW / 2;
+      const x = bldData.x + xOffset;
+      const z = bldData.z - bldData.d / 2 + (r + 0.5) * cellD;
+      cells.push({ x, z, w: cellW - 0.2, d: cellD - 0.2 });
+    }
+  }
+  return cells;
+}
+
 function generateRooms() {
   const buildingRooms = { A: 120, B: 80, C: 60, D: 40 };
+
+  const FIXED_SPECIALS_BY_FLOOR = {
+    'A::1': [
+      { id: 'LIB', name: 'Biblioteca', type: 'special', subject: 'Studio' },
+      { id: 'AUD', name: 'Auditorium', type: 'special', subject: 'Eventi' },
+      { id: 'MENSA', name: 'Mensa', type: 'special', subject: 'Pranzo' }
+    ],
+    'B::1': [
+      { id: 'LAB-INFO', name: 'Lab. Informatica', type: 'lab', subject: 'Informatica' }
+    ],
+    'B::2': [
+      { id: 'LAB-SCI', name: 'Lab. Scienze', type: 'lab', subject: 'Scienze' }
+    ]
+  };
+
   Object.entries(buildingRooms).forEach(([bld, count]) => {
     const bldData = BUILDINGS.find(b => b.id === bld);
     if (!bldData) return;
     const floors = bldData.floors;
     const roomsPerFloor = Math.ceil(count / floors);
-    const cols = 4;
-    const rows = 2;
-    const cellW = (bldData.w - 1.2) / cols;
-    const cellD = (bldData.d - 1.0) / rows;
-    const corridorW = 0.6;
 
     for (let floor = 1; floor <= floors; floor++) {
-      let placed = 0;
-      for (let r = 0; r < rows && placed < roomsPerFloor; r++) {
-        for (let c = 0; c < cols && placed < roomsPerFloor; c++) {
-          const id = `${bld}-${floor}${String(placed+1).padStart(2,'0')}`;
-          const type = ROOM_TYPES[Math.floor(Math.random() * ROOM_TYPES.length)];
-          const subject = SUBJECTS[Math.floor(Math.random() * SUBJECTS.length)];
-          let xOffset = (c - (cols-1)/2) * cellW;
-          if (c >= cols/2) xOffset += corridorW;
-          else xOffset -= corridorW / 2;
-          const x = bldData.x + xOffset;
-          const z = bldData.z - bldData.d/2 + (r + 0.5) * cellD;
-          ROOMS.push({
-            id, name: `Aula ${id}`, building: bld, floor,
-            type, subject,
-            x, z,
-            w: cellW - 0.2, d: cellD - 0.2,
-            color: type === 'class' ? 0x93B5C6 : type === 'lab' ? 0x7FA37F : 0xC9A868
-          });
-          placed++;
-        }
-      }
-      // Stairs e toilet
+      const floorKey = `${bld}::${floor}`;
+      const fixedSpecials = FIXED_SPECIALS_BY_FLOOR[floorKey] || [];
+      const cellsNeeded = roomsPerFloor + 2 + fixedSpecials.length;
+      const cols = 4;
+      const rows = Math.ceil(cellsNeeded / cols);
+      const cells = buildFloorGrid(bldData, cols, rows);
+
+      let cellIndex = 0;
+      const nextCell = () => cells[cellIndex++];
+
+      fixedSpecials.forEach(special => {
+        const cell = nextCell();
+        ROOMS.push({
+          id: special.id, name: special.name, building: bld, floor,
+          type: special.type, subject: special.subject,
+          x: cell.x, z: cell.z, w: cell.w, d: cell.d,
+          color: special.type === 'lab' ? 0x7FA37F : 0x9C89B8
+        });
+      });
+
+      const scCell = nextCell();
       ROOMS.push({
         id: `${bld}-${floor}SC`, name: `Scale ${bld}`, building: bld, floor,
         type: 'special', subject: 'Collegamento Verticale',
-        x: bldData.x - bldData.w/2 + 0.8,
-        z: bldData.z - bldData.d/2 + 0.8,
-        w: 0.6, d: 0.6,
+        x: scCell.x, z: scCell.z, w: scCell.w, d: scCell.d,
         color: 0x95A5A6
       });
+      const wcCell = nextCell();
       ROOMS.push({
         id: `${bld}-${floor}WC`, name: `Servizi ${bld}`, building: bld, floor,
         type: 'special', subject: 'Servizi Igienici',
-        x: bldData.x + bldData.w/2 - 0.8,
-        z: bldData.z - bldData.d/2 + 0.8,
-        w: 0.6, d: 0.6,
+        x: wcCell.x, z: wcCell.z, w: wcCell.w, d: wcCell.d,
         color: 0xE8B4B8
       });
+
+      let placed = 0;
+      while (placed < roomsPerFloor && cellIndex < cells.length) {
+        const cell = nextCell();
+        const id = `${bld}-${floor}${String(placed + 1).padStart(2, '0')}`;
+        const type = ROOM_TYPES[Math.floor(Math.random() * ROOM_TYPES.length)];
+        const subject = SUBJECTS[Math.floor(Math.random() * SUBJECTS.length)];
+        ROOMS.push({
+          id, name: `Aula ${id}`, building: bld, floor,
+          type, subject,
+          x: cell.x, z: cell.z, w: cell.w, d: cell.d,
+          color: type === 'class' ? 0x93B5C6 : type === 'lab' ? 0x7FA37F : 0xC9A868
+        });
+        placed++;
+      }
     }
   });
-
-  // Special rooms on ground floor (piano 1)
-  ROOMS.push({ id: 'LIB', name: 'Biblioteca', building: 'A', floor: 1, type: 'special', subject: 'Studio', x: -4, z: 1.5, w: 2.5, d: 2, color: 0x9C89B8 });
-  ROOMS.push({ id: 'AUD', name: 'Auditorium', building: 'A', floor: 1, type: 'special', subject: 'Eventi', x: 3.5, z: 1.5, w: 3, d: 2, color: 0xFC642D });
-  ROOMS.push({ id: 'MENSA', name: 'Mensa', building: 'A', floor: 1, type: 'special', subject: 'Pranzo', x: 0, z: -1.5, w: 3, d: 2, color: 0x58A4B0 });
-  ROOMS.push({ id: 'LAB-INFO', name: 'Lab. Informatica', building: 'B', floor: 1, type: 'lab', subject: 'Informatica', x: -20, z: -1, w: 2, d: 2, color: 0x7FA37F });
-  ROOMS.push({ id: 'LAB-SCI', name: 'Lab. Scienze', building: 'B', floor: 2, type: 'lab', subject: 'Scienze', x: -17, z: -1, w: 2, d: 2, color: 0x7FA37F });
 }
 generateRooms();
 
@@ -117,12 +150,23 @@ function generateTeachers() {
 }
 generateTeachers();
 
+// ---- Verifica di sicurezza ----
+const overlaps = findOverlaps(ROOMS);
+if (overlaps.length > 0) {
+  console.error(`Trovate ${overlaps.length} sovrapposizioni tra stanze:`);
+  overlaps.forEach(([a, b]) => console.error(`  - ${a.id} si sovrappone a ${b.id} (edificio ${a.building}, piano ${a.floor})`));
+  process.exit(1);
+}
+
 // ---- Seed ----
 const initialData = {
   buildings: BUILDINGS,
   rooms: ROOMS,
   teachers: TEACHERS,
-  schedule: {}
+  campusElements: [],
+  schedule: {},
+  settings: { chatbotEnabled: true }
 };
 
 writeDB(initialData);
+console.log(`Seed completato: ${BUILDINGS.length} edifici, ${ROOMS.length} stanze, ${TEACHERS.length} docenti.`);

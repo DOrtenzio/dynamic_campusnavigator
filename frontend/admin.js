@@ -143,7 +143,7 @@ function adminTab(name) {
   if (name === 'schedule') renderAdminSchedule();
   if (name === 'map') renderAdminMap();
   if (name === 'csv') renderAdminCSV();
-  if(name === 'chatbot') renderChatbotAdmin();
+  if(name === 'settings') renderAdminSettings();
 }
 
 async function renderChatbotAdmin() {
@@ -166,6 +166,70 @@ async function renderChatbotAdmin() {
         </label>
       </div>
     </div>`;
+}
+
+function renderAdminSettings() {
+  const content = document.getElementById('adminContent');
+  content.innerHTML = `
+    <div style="padding:28px; max-width:500px;">
+      <h2 style="font-family:'Outfit',sans-serif;font-weight:700;font-size:20px;margin-bottom:6px;">Settings</h2>
+      <p style="color:var(--text-medium);font-size:13px;margin-bottom:24px;">Configura il comportamento dell'app.</p>
+      
+      <div id="settingsContainer"></div>
+    </div>
+  `;
+  
+  loadSettings();
+}
+
+async function loadSettings() {
+  const settings = await apiRequest('GET', '/settings');
+  const container = document.getElementById('settingsContainer');
+  
+  const chatEnabled = settings.chatbotEnabled ?? true;
+  const rotLocked = settings.lockMapRotation ?? false;
+  
+  container.innerHTML = `
+    <!-- SETTING 1: Chatbot -->
+    <div style="display:flex;align-items:center;gap:16px;background:white;padding:18px;border-radius:14px;border:1.5px solid rgba(0,0,0,0.08);margin-bottom:12px;">
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:15px;">Chatbot AI</div>
+        <div style="font-size:12px;color:var(--text-medium);margin-top:3px;">Abilita assistente virtuale</div>
+      </div>
+      <label style="position:relative;display:inline-block;width:48px;height:26px;">
+        <input type="checkbox" id="chatbotToggle" ${chatEnabled ? 'checked' : ''} style="opacity:0;width:0;height:0;">
+        <span onclick="toggleSetting('chatbotEnabled')" style="position:absolute;inset:0;background:${chatEnabled ? '#D4A373' : '#ccc'};border-radius:26px;cursor:pointer;transition:background 0.2s;">
+          <span style="position:absolute;width:20px;height:20px;background:white;border-radius:50%;top:3px;left:${chatEnabled ? '25px' : '3px'};transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.2);"></span>
+        </span>
+      </label>
+    </div>
+    
+    <!-- SETTING 2: Lock Map Rotation -->
+    <div style="display:flex;align-items:center;gap:16px;background:white;padding:18px;border-radius:14px;border:1.5px solid rgba(0,0,0,0.08);">
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:15px;">Blocca rotazione mappa</div>
+        <div style="font-size:12px;color:var(--text-medium);margin-top:3px;">Impedisce la rotazione laterale 3D</div>
+      </div>
+      <label style="position:relative;display:inline-block;width:48px;height:26px;">
+        <input type="checkbox" id="lockRotationToggle" ${rotLocked ? 'checked' : ''} style="opacity:0;width:0;height:0;">
+        <span onclick="toggleSetting('lockMapRotation')" style="position:absolute;inset:0;background:${rotLocked ? '#D4A373' : '#ccc'};border-radius:26px;cursor:pointer;transition:background 0.2s;">
+          <span style="position:absolute;width:20px;height:20px;background:white;border-radius:50%;top:3px;left:${rotLocked ? '25px' : '3px'};transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.2);"></span>
+        </span>
+      </label>
+    </div>
+  `;
+}
+
+async function toggleSetting(settingKey) {
+  const settings = await apiRequest('GET', '/settings');
+  const currentValue = settings[settingKey] ?? false;
+  const newValue = !currentValue;
+  
+  await apiRequest('PATCH', '/settings', { [settingKey]: newValue });
+  
+  showToast(`${settingKey === 'chatbotEnabled' ? 'Chatbot' : 'Lock rotazione'} ${newValue ? 'abilitato' : 'disabilitato'}`);
+  
+  loadSettings();
 }
 
 async function toggleChatbotSetting() {
@@ -768,30 +832,46 @@ function renderAdminMap() {
 
     <div class="admin-map2d-wrap">
       <svg id="campusMap2D" class="admin-map2d-svg" xmlns="http://www.w3.org/2000/svg"></svg>
-      <div class="admin-map2d-legend">
-        <span class="admin-legend-item"><span class="admin-map2d-dot" style="background:#D8D0C4"></span>Sidewalks</span>
-        <span class="admin-legend-item"><span class="admin-map2d-dot" style="background:#FFD54F"></span>Lamps</span>
-        ${adminBuildings.map(b => `
-          <span class="admin-legend-item"><span class="admin-map2d-dot" style="background:${b.color}"></span>${b.id}</span>
-        `).join('')}
-      </div>
     </div>
 
     <div class="admin-campus-features">
       <div class="admin-campus-features-header">
         <span>Campus features</span>
-        <span class="admin-campus-features-count">${adminCampusElements.length} elements</span>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="admin-campus-features-count" id="campusFeaturesCount">${adminCampusElements.length} elements</span>
+          <button class="admin-btn admin-btn-primary" style="font-size:12px;padding:4px 12px;" onclick="openElementsEditor()">✏️ Edit Elements</button>
+        </div>
       </div>
       <div class="admin-campus-features-list" id="campusFeaturesList">
         ${adminCampusElements.map(el => `
-          <div class="admin-campus-feature-chip" data-type="${el.type}">
+          <div class="admin-campus-feature-chip" data-id="${el.id}" data-type="${el.type}">
             <span class="admin-feature-type">${el.type}</span>
-            <span class="admin-feature-label">${el.label || el.id}</span>
             <span class="admin-feature-pos">(${el.x}, ${el.z})</span>
+            <button class="admin-feature-delete" onclick="deleteCampusElement('${el.id}')" title="Delete" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:14px;padding:0 4px;line-height:1;">✕</button>
           </div>
         `).join('')}
       </div>
-      <p class="admin-campus-features-note">Sidewalks, streetlights, and benches are shown on the map. Buildings overlapping them are highlighted in red.</p>
+      <p class="admin-campus-features-note">Sidewalks, streetlights, and benches are shown on the map.</p>
+    </div>
+
+    <div id="elementsEditorOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:999;align-items:center;justify-content:center;">
+      <div style="background:#faf7f2;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.22);width:min(92vw,820px);max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1.5px solid #E0D8CE;font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;">
+          <span>🗺️ Elements Editor</span>
+          <button onclick="closeElementsEditor()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#888;line-height:1;">✕</button>
+        </div>
+        <div style="padding:10px 16px;border-bottom:1px solid #E0D8CE;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <span style="font-size:12px;color:#888;margin-right:4px;font-family:'Outfit',sans-serif;">Add:</span>
+          ${['sidewalk','streetlight','bench','flowerbed','fountain'].map(t => `
+            <button class="admin-btn admin-btn-secondary" style="font-size:12px;padding:4px 10px;" onclick="addCampusElement('${t}')">+ ${t}</button>
+          `).join('')}
+          <span style="font-size:11px;color:#aaa;margin-left:auto;font-family:'Outfit',sans-serif;">Drag to move · Click to select · Del to delete</span>
+        </div>
+        <div style="flex:1;overflow:hidden;position:relative;">
+          <svg id="elementsEditorSVG" style="display:block;width:100%;height:480px;cursor:default;" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+        <div id="elementsEditorStatus" style="padding:8px 16px;font-size:11px;color:#888;font-family:'Outfit',sans-serif;border-top:1px solid #E0D8CE;min-height:28px;"></div>
+      </div>
     </div>
 
     <div class="admin-map-editor">
@@ -827,6 +907,52 @@ function renderAdminMap() {
   initMap2D();
 }
 
+async function addCampusElement(type) {
+  const defaults = {
+    sidewalk:    { x: 0, z: 0, w: 10, d: 3, rotation: 0 },
+    streetlight: { x: 0, z: 0, w: 1,  d: 1, rotation: 0 },
+    bench:       { x: 0, z: 0, w: 2,  d: 1, rotation: 0 },
+    flowerbed:   { x: 0, z: 0, w: 3,  d: 3, rotation: 0 },
+    fountain:    { x: 0, z: 0, w: 4,  d: 4, rotation: 0 }
+  };
+  const payload = { type, ...(defaults[type] || { x: 0, z: 0, w: 2, d: 2, rotation: 0 }) };
+  try {
+    const created = await apiRequest('POST', '/campus-elements', payload);
+    adminCampusElements.push(created);
+    document.getElementById('campusFeaturesCount').textContent = `${adminCampusElements.length} elements`;
+    const list = document.getElementById('campusFeaturesList');
+    const chip = document.createElement('div');
+    chip.className = 'admin-campus-feature-chip';
+    chip.dataset.id = created.id;
+    chip.dataset.type = created.type;
+    chip.innerHTML = `
+      <span class="admin-feature-type">${created.type}</span>
+      <span class="admin-feature-label">${created.label || created.id}</span>
+      <span class="admin-feature-pos">(${created.x}, ${created.z})</span>
+      <button class="admin-feature-delete" onclick="deleteCampusElement('${created.id}')" title="Delete" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:14px;padding:0 4px;line-height:1;">✕</button>
+    `;
+    list.appendChild(chip);
+    initMap2D();
+    showToast(`${type} added — drag it on the map to position it`);
+  } catch (err) {
+    showToast('Error adding element: ' + err.message);
+  }
+}
+
+async function deleteCampusElement(id) {
+  try {
+    await apiRequest('DELETE', `/campus-elements/${id}`);
+    adminCampusElements = adminCampusElements.filter(e => e.id !== id);
+    const chip = document.querySelector(`.admin-campus-feature-chip[data-id="${id}"]`);
+    if (chip) chip.remove();
+    document.getElementById('campusFeaturesCount').textContent = `${adminCampusElements.length} elements`;
+    initMap2D();
+    showToast('Element deleted');
+  } catch (err) {
+    showToast('Error deleting element: ' + err.message);
+  }
+}
+
 function initMap2D() {
     const svg = document.getElementById('campusMap2D');
     if (!svg || !adminBuildings.length) return;
@@ -840,6 +966,11 @@ function initMap2D() {
         minZ = Math.min(minZ, b.z - b.d/2);
         maxZ = Math.max(maxZ, b.z + b.d/2);
     });
+    adminCampusElements.forEach(el => {
+        const hw = (el.w || 2) / 2, hd = (el.d || 2) / 2;
+        minX = Math.min(minX, el.x - hw); maxX = Math.max(maxX, el.x + hw);
+        minZ = Math.min(minZ, el.z - hd); maxZ = Math.max(maxZ, el.z + hd);
+    });
     const rangeX = maxX - minX || 1;
     const rangeZ = maxZ - minZ || 1;
     const scaleX = (W - PAD*2) / rangeX;
@@ -850,123 +981,8 @@ function initMap2D() {
         sy: PAD + (z - minZ) * scale
     });
     svg.innerHTML = '';
-    const elementLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    elementLayer.setAttribute('id', 'campusElementsLayer');
-    adminCampusElements.forEach((el, index) => {
-        let svgElement;
-        const { sx, sy } = toSVG(el.x, el.z);
-        if (el.type === 'sidewalk') {
-            const { sx: sxSW, sy: sySW } = toSVG(el.x - el.w / 2, el.z - el.d / 2);
-            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            rect.setAttribute('x', sxSW);
-            rect.setAttribute('y', sySW);
-            rect.setAttribute('width', el.w * scale);
-            rect.setAttribute('height', el.d * scale);
-            rect.setAttribute('fill', '#D8D0C4');
-            rect.setAttribute('fill-opacity', '0.85');
-            rect.setAttribute('stroke', '#A89880');
-            rect.setAttribute('stroke-width', '1');
-            rect.setAttribute('rx', '2');
-            if (el.rotation) {
-                const cx = sxSW + (el.w * scale) / 2;
-                const cy = sySW + (el.d * scale) / 2;
-                rect.setAttribute('transform', `rotate(${el.rotation} ${cx} ${cy})`);
-            }
-            svgElement = rect;
-        } else if (el.type === 'streetlight') {
-            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('cx', sx);
-            circle.setAttribute('cy', sy);
-            circle.setAttribute('r', '6');
-            circle.setAttribute('fill', '#FFD54F');
-            circle.setAttribute('stroke', '#F9A825');
-            circle.setAttribute('stroke-width', '1.5');
-            circle.setAttribute('cursor', 'grab');
-            svgElement = circle;
-        } else if (el.type === 'bench') {
-            const bench = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            bench.setAttribute('x', sx - 4);
-            bench.setAttribute('y', sy - 2);
-            bench.setAttribute('width', '8');
-            bench.setAttribute('height', '4');
-            bench.setAttribute('fill', '#8B5A2B');
-            bench.setAttribute('rx', '1');
-            bench.setAttribute('transform', `rotate(${el.rotation || 0} ${sx} ${sy})`);
-            bench.setAttribute('cursor', 'grab');
-            svgElement = bench;
-        } else if (el.type === 'flowerbed') {
-            const bed = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            bed.setAttribute('cx', sx);
-            bed.setAttribute('cy', sy);
-            bed.setAttribute('r', '7');
-            bed.setAttribute('fill', '#6BCB77');
-            bed.setAttribute('fill-opacity', '0.7');
-            bed.setAttribute('cursor', 'grab');
-            svgElement = bed;
-        } else if (el.type === 'fountain') {
-            const fountain = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            fountain.setAttribute('cx', sx);
-            fountain.setAttribute('cy', sy);
-            fountain.setAttribute('r', '9');
-            fountain.setAttribute('fill', '#58A4B0');
-            fountain.setAttribute('fill-opacity', '0.6');
-            fountain.setAttribute('stroke', '#4A9099');
-            fountain.setAttribute('cursor', 'grab');
-            svgElement = fountain;
-        }
-        if (svgElement) {
-            elementLayer.appendChild(svgElement);
-            if (svgElement.getAttribute('cursor') === 'grab') {
-                let dragging = false;
-                let startMX, startMY, startX, startZ;
-                svgElement.addEventListener('mousedown', (e) => {
-                    e.stopPropagation();
-                    dragging = true;
-                    startMX = e.clientX;
-                    startMY = e.clientY;
-                    startX = el.x;
-                    startZ = el.z;
-                    svgElement.setAttribute('cursor', 'grabbing');
-                    svgElement.setAttribute('stroke', '#333');
-                    svgElement.setAttribute('stroke-width', '2');
-                    const onMove = (ev) => {
-                        if (!dragging) return;
-                        const dx = (ev.clientX - startMX) / scale;
-                        const dz = (ev.clientY - startMY) / scale;
-                        el.x = Math.round((startX + dx) * 2) / 2;
-                        el.z = Math.round((startZ + dz) * 2) / 2;
-                        const newPos = toSVG(el.x, el.z);
-                        if (['streetlight', 'flowerbed', 'fountain'].includes(el.type)) {
-                            svgElement.setAttribute('cx', newPos.sx);
-                            svgElement.setAttribute('cy', newPos.sy);
-                        } else if (el.type === 'bench') {
-                            svgElement.setAttribute('transform', `rotate(${el.rotation || 0} ${newPos.sx} ${newPos.sy})`);
-                            svgElement.setAttribute('x', newPos.sx - 4);
-                            svgElement.setAttribute('y', newPos.sy - 2);
-                        }
-                    };
-                    const onUp = async () => {
-                        dragging = false;
-                        document.removeEventListener('mousemove', onMove);
-                        document.removeEventListener('mouseup', onUp);
-                        svgElement.setAttribute('cursor', 'grab');
-                        svgElement.setAttribute('stroke', el.type === 'streetlight' ? '#F9A825' : (el.type === 'fountain' ? '#4A9099' : 'none'));
-                        svgElement.setAttribute('stroke-width', el.type === 'streetlight' ? '1.5' : (el.type === 'fountain' ? '1' : '0'));
-                        try {
-                            await apiRequest('PUT', `/campus-elements/${el.id}`, { x: el.x, z: el.z });
-                            showToast('Element position updated');
-                        } catch (err) {
-                            console.error('Error saving element position', err);
-                            showToast('Error saving position');
-                        }
-                    };
-                    document.addEventListener('mousemove', onMove);
-                    document.addEventListener('mouseup', onUp);
-                });
-            }
-        }
-    });
-    svg.appendChild(elementLayer);
+
+    // Grid
     const gridStep = 5;
     const gridColor = '#e8e2d8';
     for (let gx = Math.floor(minX/gridStep)*gridStep; gx <= maxX+gridStep; gx += gridStep) {
@@ -985,10 +1001,45 @@ function initMap2D() {
         line.setAttribute('stroke', gridColor); line.setAttribute('stroke-width', '1');
         svg.appendChild(line);
     }
+
+    // Elements layer (read-only preview)
+    adminCampusElements.forEach(el => {
+        const { sx, sy } = toSVG(el.x, el.z);
+        let shape;
+        if (el.type === 'sidewalk') {
+            const { sx: x0, sy: y0 } = toSVG(el.x - (el.w||4)/2, el.z - (el.d||2)/2);
+            shape = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            shape.setAttribute('x', x0); shape.setAttribute('y', y0);
+            shape.setAttribute('width', (el.w||4)*scale); shape.setAttribute('height', (el.d||2)*scale);
+            shape.setAttribute('fill', '#D8D0C4'); shape.setAttribute('fill-opacity', '0.85');
+            shape.setAttribute('stroke', '#A89880'); shape.setAttribute('stroke-width', '1'); shape.setAttribute('rx', '2');
+            if (el.rotation) { const cx=x0+(el.w||4)*scale/2,cy=y0+(el.d||2)*scale/2; shape.setAttribute('transform',`rotate(${el.rotation} ${cx} ${cy})`); }
+        } else if (el.type === 'streetlight') {
+            shape = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            shape.setAttribute('cx', sx); shape.setAttribute('cy', sy); shape.setAttribute('r', '5');
+            shape.setAttribute('fill', '#FFD54F'); shape.setAttribute('stroke', '#F9A825'); shape.setAttribute('stroke-width', '1.5');
+        } else if (el.type === 'bench') {
+            shape = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            shape.setAttribute('x', sx-4); shape.setAttribute('y', sy-2); shape.setAttribute('width', '8'); shape.setAttribute('height', '4');
+            shape.setAttribute('fill', '#8B5A2B'); shape.setAttribute('rx', '1');
+        } else if (el.type === 'flowerbed') {
+            shape = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            shape.setAttribute('cx', sx); shape.setAttribute('cy', sy); shape.setAttribute('r', '6');
+            shape.setAttribute('fill', '#6BCB77'); shape.setAttribute('fill-opacity', '0.7');
+        } else if (el.type === 'fountain') {
+            shape = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            shape.setAttribute('cx', sx); shape.setAttribute('cy', sy); shape.setAttribute('r', '8');
+            shape.setAttribute('fill', '#58A4B0'); shape.setAttribute('fill-opacity', '0.6');
+            shape.setAttribute('stroke', '#4A9099'); shape.setAttribute('stroke-width', '1');
+        }
+        if (shape) svg.appendChild(shape);
+    });
+
+    // Buildings with inline labels
     adminBuildings.forEach(b => {
         const rot = normalizeRotation(b.rotation);
         const fp = getEffectiveFootprint(b.w, b.d, rot);
-        const { sx, sy } = toSVG(b.x - fp.w / 2, b.z - fp.d / 2);
+        const { sx, sy } = toSVG(b.x - fp.w/2, b.z - fp.d/2);
         const bw = fp.w * scale;
         const bd = fp.d * scale;
         const isSelected = adminSelectedBuilding === b.id;
@@ -997,106 +1048,257 @@ function initMap2D() {
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('cursor', 'grab');
         g.setAttribute('data-id', b.id);
-        const cx = sx + bw / 2;
-        const cy = sy + bd / 2;
-        if (rot) g.setAttribute('transform', `rotate(${rot} ${cx} ${cy})`);
-        const shadow = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        shadow.setAttribute('x', sx + 3);
-        shadow.setAttribute('y', sy + 3);
-        shadow.setAttribute('width', bw);
-        shadow.setAttribute('height', bd);
-        shadow.setAttribute('fill', 'rgba(0,0,0,0.10)');
-        shadow.setAttribute('rx', '3');
-        g.appendChild(shadow);
+
+        const cx = sx + bw/2, cy = sy + bd/2;
+        if (b.rotation) g.setAttribute('transform', `rotate(${rot} ${cx} ${cy})`);
+
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('x', sx);
-        rect.setAttribute('y', sy);
-        rect.setAttribute('width', bw);
-        rect.setAttribute('height', bd);
-        rect.setAttribute('fill', b.color);
+        rect.setAttribute('x', sx); rect.setAttribute('y', sy);
+        rect.setAttribute('width', bw); rect.setAttribute('height', bd);
+        rect.setAttribute('fill', b.color || '#ccc');
         rect.setAttribute('fill-opacity', isSelected ? '1' : '0.75');
-        rect.setAttribute('stroke', hasConflict ? '#E53935' : (isSelected ? '#333' : b.color));
-        rect.setAttribute('stroke-width', hasConflict ? '3' : (isSelected ? '2.5' : '1.5'));
+        rect.setAttribute('stroke', hasConflict ? '#e74c3c' : (isSelected ? '#333' : '#888'));
+        rect.setAttribute('stroke-width', isSelected ? '2' : '1');
         rect.setAttribute('rx', '3');
         g.appendChild(rect);
-        const styleDef = (typeof BUILDING_STYLE_DEFS !== 'undefined' && BUILDING_STYLE_DEFS[b.icon || 'wing']) || {};
-        if (styleDef.accent) {
-            const accent = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            accent.setAttribute('x', sx);
-            accent.setAttribute('y', sy);
-            accent.setAttribute('width', bw);
-            accent.setAttribute('height', '4');
-            accent.setAttribute('fill', styleDef.accent);
-            accent.setAttribute('opacity', '0.85');
-            g.appendChild(accent);
-        }
-        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', sx + bw / 2);
-        text.setAttribute('y', sy + bd / 2 + 5);
-        text.setAttribute('text-anchor', 'middle');
-        text.setAttribute('font-size', Math.max(10, Math.min(14, bw / 2)));
-        text.setAttribute('font-weight', '700');
-        text.setAttribute('fill', '#fff');
-        text.setAttribute('pointer-events', 'none');
-        text.textContent = b.id + (rot ? ` ↻${rot}°` : '');
-        g.appendChild(text);
-        if (hasConflict && isSelected) {
-            const warn = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            warn.setAttribute('x', sx + bw / 2);
-            warn.setAttribute('y', sy - 6);
-            warn.setAttribute('text-anchor', 'middle');
-            warn.setAttribute('font-size', '10');
-            warn.setAttribute('fill', '#E53935');
-            warn.setAttribute('font-weight', '600');
-            warn.textContent = `Overlap: ${collisions.map(c => c.label).join(', ')}`;
-            svg.appendChild(warn);
-        }
-        g.addEventListener('click', () => selectAdminBuilding(b.id));
+
+        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        txt.setAttribute('x', cx); txt.setAttribute('y', cy);
+        txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('dominant-baseline', 'middle');
+        txt.setAttribute('font-size', Math.max(8, Math.min(13, bw/3)));
+        txt.setAttribute('font-weight', '700');
+        txt.setAttribute('fill', '#fff');
+        txt.setAttribute('paint-order', 'stroke');
+        txt.setAttribute('stroke', 'rgba(0,0,0,0.4)');
+        txt.setAttribute('stroke-width', '2');
+        txt.setAttribute('pointer-events', 'none');
+        txt.textContent = b.id;
+        g.appendChild(txt);
+
+        svg.appendChild(g);
+
+        // Drag on minimap (buildings only)
         let dragging = false, startMX, startMY, startBX, startBZ;
         g.addEventListener('mousedown', e => {
-            e.stopPropagation();
-            dragging = true;
-            startMX = e.clientX;
-            startMY = e.clientY;
-            startBX = b.x;
-            startBZ = b.z;
+            e.stopPropagation(); dragging = true;
+            startMX = e.clientX; startMY = e.clientY;
+            startBX = b.x; startBZ = b.z;
             g.setAttribute('cursor', 'grabbing');
             const onMove = ev => {
                 if (!dragging) return;
-                const dx = (ev.clientX - startMX) / scale;
-                const dz = (ev.clientY - startMY) / scale;
-                b.x = Math.round((startBX + dx) * 2) / 2;
-                b.z = Math.round((startBZ + dz) * 2) / 2;
-                const ix = document.getElementById('be_x');
-                const iz = document.getElementById('be_z');
-                const iw = document.getElementById('collisionWarning');
-                if (ix && adminSelectedBuilding === b.id) {
-                    ix.value = b.x;
-                    iz.value = b.z;
-                }
-                if (iw && adminSelectedBuilding === b.id) {
-                    const issues = getBuildingCollisions(b, adminBuildings, adminCampusElements, b.id);
-                    iw.textContent = issues.length ? `⚠ Overlaps: ${issues.map(i => i.label).join(', ')}` : '';
-                    iw.style.display = issues.length ? 'block' : 'none';
-                }
+                b.x = Math.round((startBX + (ev.clientX - startMX)/scale)*2)/2;
+                b.z = Math.round((startBZ + (ev.clientY - startMY)/scale)*2)/2;
                 initMap2D();
             };
             const onUp = async () => {
                 dragging = false;
                 document.removeEventListener('mousemove', onMove);
                 document.removeEventListener('mouseup', onUp);
-                try {
-                    await apiRequest('PUT', `/buildings/${b.id}`, { x: b.x, z: b.z });
-                    showToast('Building position updated');
-                } catch (err) {
-                    console.error('Error saving building position', err);
-                }
+                try { await apiRequest('PUT', `/buildings/${b.id}`, { x: b.x, z: b.z }); showToast(`${b.id} repositioned`); }
+                catch { showToast('Error saving position'); }
             };
             document.addEventListener('mousemove', onMove);
             document.addEventListener('mouseup', onUp);
         });
+        g.addEventListener('click', () => selectAdminBuilding(b.id));
+    });
+}
+
+function openElementsEditor() {
+    const overlay = document.getElementById('elementsEditorOverlay');
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    initElementsEditorMap();
+}
+
+function closeElementsEditor() {
+    const overlay = document.getElementById('elementsEditorOverlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function initElementsEditorMap() {
+    const svg = document.getElementById('elementsEditorSVG');
+    if (!svg) return;
+    const W = svg.clientWidth || 780;
+    const H = svg.clientHeight || 480;
+    const PAD = 40;
+
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    adminBuildings.forEach(b => {
+        minX = Math.min(minX, b.x - b.w/2); maxX = Math.max(maxX, b.x + b.w/2);
+        minZ = Math.min(minZ, b.z - b.d/2); maxZ = Math.max(maxZ, b.z + b.d/2);
+    });
+    adminCampusElements.forEach(el => {
+        const hw = (el.w||2)/2, hd = (el.d||2)/2;
+        minX = Math.min(minX, el.x-hw); maxX = Math.max(maxX, el.x+hw);
+        minZ = Math.min(minZ, el.z-hd); maxZ = Math.max(maxZ, el.z+hd);
+    });
+    // extra padding in world units
+    minX -= 5; maxX += 5; minZ -= 5; maxZ += 5;
+
+    const rangeX = maxX - minX || 1;
+    const rangeZ = maxZ - minZ || 1;
+    const scale = Math.min((W - PAD*2)/rangeX, (H - PAD*2)/rangeZ);
+
+    const toSVG = (x, z) => ({ sx: PAD + (x - minX)*scale, sy: PAD + (z - minZ)*scale });
+    const toWorld = (sx, sy) => ({ x: (sx - PAD)/scale + minX, z: (sy - PAD)/scale + minZ });
+
+    svg.innerHTML = '';
+    let selectedEl = null;
+
+    const setStatus = (msg) => { const s = document.getElementById('elementsEditorStatus'); if(s) s.textContent = msg; };
+
+    // Grid
+    const gridStep = 5;
+    for (let gx = Math.floor(minX/gridStep)*gridStep; gx <= maxX+gridStep; gx += gridStep) {
+        const {sx} = toSVG(gx, minZ);
+        const l = document.createElementNS('http://www.w3.org/2000/svg','line');
+        l.setAttribute('x1',sx);l.setAttribute('y1',PAD-10);l.setAttribute('x2',sx);l.setAttribute('y2',H-PAD+10);
+        l.setAttribute('stroke','#e8e2d8');l.setAttribute('stroke-width','1'); svg.appendChild(l);
+    }
+    for (let gz = Math.floor(minZ/gridStep)*gridStep; gz <= maxZ+gridStep; gz += gridStep) {
+        const {sy} = toSVG(minX, gz);
+        const l = document.createElementNS('http://www.w3.org/2000/svg','line');
+        l.setAttribute('x1',PAD-10);l.setAttribute('y1',sy);l.setAttribute('x2',W-PAD+10);l.setAttribute('y2',sy);
+        l.setAttribute('stroke','#e8e2d8');l.setAttribute('stroke-width','1'); svg.appendChild(l);
+    }
+
+    // Buildings (ghost, not draggable here)
+    adminBuildings.forEach(b => {
+        const rot = normalizeRotation(b.rotation);
+        const fp = getEffectiveFootprint(b.w, b.d, rot);
+        const {sx, sy} = toSVG(b.x - fp.w/2, b.z - fp.d/2);
+        const bw = fp.w*scale, bd = fp.d*scale;
+        const cx = sx+bw/2, cy = sy+bd/2;
+        const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+        if (b.rotation) g.setAttribute('transform',`rotate(${rot} ${cx} ${cy})`);
+        const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+        rect.setAttribute('x',sx);rect.setAttribute('y',sy);rect.setAttribute('width',bw);rect.setAttribute('height',bd);
+        rect.setAttribute('fill',b.color||'#ccc');rect.setAttribute('fill-opacity','0.3');
+        rect.setAttribute('stroke','#aaa');rect.setAttribute('stroke-width','1');rect.setAttribute('rx','3');
+        g.appendChild(rect);
+        const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+        txt.setAttribute('x',cx);txt.setAttribute('y',cy);txt.setAttribute('text-anchor','middle');txt.setAttribute('dominant-baseline','middle');
+        txt.setAttribute('font-size',Math.max(8,Math.min(12,bw/4)));txt.setAttribute('font-weight','700');txt.setAttribute('fill','#888');txt.setAttribute('pointer-events','none');
+        txt.textContent = b.id; g.appendChild(txt);
         svg.appendChild(g);
     });
+
+    // Elements — fully draggable including sidewalks
+    const elGroup = document.createElementNS('http://www.w3.org/2000/svg','g');
+    elGroup.setAttribute('id','editorElGroup');
+    svg.appendChild(elGroup);
+
+    function buildElementShape(el) {
+        const {sx, sy} = toSVG(el.x, el.z);
+        let shape;
+        if (el.type === 'sidewalk') {
+            const {sx: x0, sy: y0} = toSVG(el.x - (el.w||4)/2, el.z - (el.d||2)/2);
+            shape = document.createElementNS('http://www.w3.org/2000/svg','rect');
+            shape.setAttribute('x',x0); shape.setAttribute('y',y0);
+            shape.setAttribute('width',(el.w||4)*scale); shape.setAttribute('height',(el.d||2)*scale);
+            shape.setAttribute('fill','#D8D0C4'); shape.setAttribute('stroke','#A89880'); shape.setAttribute('stroke-width','1.5'); shape.setAttribute('rx','2');
+            if (el.rotation) { const cx=x0+(el.w||4)*scale/2, cy=y0+(el.d||2)*scale/2; shape.setAttribute('transform',`rotate(${el.rotation} ${cx} ${cy})`); }
+        } else if (el.type === 'streetlight') {
+            shape = document.createElementNS('http://www.w3.org/2000/svg','circle');
+            shape.setAttribute('cx',sx); shape.setAttribute('cy',sy); shape.setAttribute('r','7');
+            shape.setAttribute('fill','#FFD54F'); shape.setAttribute('stroke','#F9A825'); shape.setAttribute('stroke-width','1.5');
+        } else if (el.type === 'bench') {
+            shape = document.createElementNS('http://www.w3.org/2000/svg','rect');
+            shape.setAttribute('x',sx-5); shape.setAttribute('y',sy-3); shape.setAttribute('width','10'); shape.setAttribute('height','5');
+            shape.setAttribute('fill','#8B5A2B'); shape.setAttribute('rx','1');
+            shape.setAttribute('transform',`rotate(${el.rotation||0} ${sx} ${sy})`);
+        } else if (el.type === 'flowerbed') {
+            shape = document.createElementNS('http://www.w3.org/2000/svg','circle');
+            shape.setAttribute('cx',sx); shape.setAttribute('cy',sy); shape.setAttribute('r','8');
+            shape.setAttribute('fill','#6BCB77'); shape.setAttribute('fill-opacity','0.8');
+        } else if (el.type === 'fountain') {
+            shape = document.createElementNS('http://www.w3.org/2000/svg','circle');
+            shape.setAttribute('cx',sx); shape.setAttribute('cy',sy); shape.setAttribute('r','10');
+            shape.setAttribute('fill','#58A4B0'); shape.setAttribute('fill-opacity','0.7');
+            shape.setAttribute('stroke','#4A9099'); shape.setAttribute('stroke-width','1.5');
+        }
+        return shape;
+    }
+
+    function renderAllElements() {
+        elGroup.innerHTML = '';
+        adminCampusElements.forEach(el => {
+            const shape = buildElementShape(el);
+            if (!shape) return;
+            shape.setAttribute('cursor','grab');
+            shape.dataset && (shape.dataset.elId = el.id);
+            const isSelected = selectedEl && selectedEl.id === el.id;
+            if (isSelected) {
+                shape.setAttribute('stroke','#e74c3c');
+                shape.setAttribute('stroke-width','2.5');
+                shape.setAttribute('filter','url(#selGlow)');
+            }
+
+            let dragging = false, startMX, startMY, startEX, startEZ;
+            shape.addEventListener('mousedown', e => {
+                e.stopPropagation();
+                selectedEl = el;
+                dragging = true;
+                startMX = e.clientX; startMY = e.clientY;
+                startEX = el.x; startEZ = el.z;
+                setStatus(`Selected: ${el.type} (${el.id}) — drag to move, press Delete to remove`);
+                renderAllElements();
+                shape.setAttribute('cursor','grabbing');
+
+                const rect = svg.getBoundingClientRect();
+                const onMove = ev => {
+                    if (!dragging) return;
+                    const dx = (ev.clientX - startMX) / scale;
+                    const dz = (ev.clientY - startMY) / scale;
+                    el.x = Math.round((startEX + dx) * 2) / 2;
+                    el.z = Math.round((startEZ + dz) * 2) / 2;
+                    renderAllElements();
+                };
+                const onUp = async () => {
+                    dragging = false;
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onUp);
+                    try {
+                        await apiRequest('PUT', `/campus-elements/${el.id}`, { x: el.x, z: el.z });
+                        setStatus(`✓ ${el.type} saved at (${el.x}, ${el.z})`);
+                        initMap2D();
+                        // update chip position
+                        const chip = document.querySelector(`.admin-campus-feature-chip[data-id="${el.id}"] .admin-feature-pos`);
+                        if (chip) chip.textContent = `(${el.x}, ${el.z})`;
+                    } catch { setStatus('Error saving position'); }
+                };
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+            });
+
+            elGroup.appendChild(shape);
+        });
+    }
+
+    // Glow filter for selection
+    const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+    const filter = document.createElementNS('http://www.w3.org/2000/svg','filter');
+    filter.setAttribute('id','selGlow');
+    const feGlow = document.createElementNS('http://www.w3.org/2000/svg','feDropShadow');
+    feGlow.setAttribute('dx','0');feGlow.setAttribute('dy','0');feGlow.setAttribute('stdDeviation','3');feGlow.setAttribute('flood-color','#e74c3c');feGlow.setAttribute('flood-opacity','0.7');
+    filter.appendChild(feGlow); defs.appendChild(filter); svg.insertBefore(defs, svg.firstChild);
+
+    // Delete key handler
+    const keyHandler = e => {
+        if ((e.key === 'Delete' || e.key === 'Backspace') && selectedEl) {
+            deleteCampusElement(selectedEl.id);
+            selectedEl = null;
+            renderAllElements();
+            setStatus('Element deleted');
+        }
+    };
+    svg.setAttribute('tabindex','0');
+    svg.addEventListener('keydown', keyHandler);
+    svg.addEventListener('click', e => { if (e.target === svg) { selectedEl = null; renderAllElements(); setStatus(''); } });
+
+    renderAllElements();
+    setStatus(`${adminCampusElements.length} elements on canvas — drag to reposition`);
 }
 
 function selectAdminBuilding(id) {

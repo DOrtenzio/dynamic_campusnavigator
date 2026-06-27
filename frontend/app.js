@@ -91,6 +91,15 @@ async function loadDataFromBackend() {
     CAMPUS_ELEMENTS = campusElements || [];
     
     generateClassesFromRooms();
+    updateDashboardStats();
+    const stats = getCampusStats();
+    const statElements = document.querySelectorAll('.campus-stat .val');
+    if (statElements.length >= 4 && document.getElementById('onboarding').classList.contains('active')) {
+      statElements[0].textContent = stats.buildings;
+      statElements[1].textContent = stats.rooms;
+      statElements[2].textContent = stats.teachers;
+      statElements[3].textContent = stats.classes;
+    }
     
     return true;
   } catch (err) {
@@ -754,6 +763,97 @@ function navigateTo(roomId) {
   }, 300);
 }
 
+function getCampusStats() {
+  const totalBuildings = BUILDINGS.length;
+  const totalRooms = ROOMS.length;
+  const totalTeachers = TEACHERS.length;
+  const totalClasses = CLASSES.length;
+  
+  return {
+    buildings: totalBuildings,
+    rooms: totalRooms,
+    teachers: totalTeachers,
+    classes: totalClasses
+  };
+}
+
+function animateNumber(element, target, duration = 1000) {
+  const start = 0;
+  const startTime = performance.now();
+  
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3); 
+    
+    const current = Math.round(start + (target - start) * eased);
+    element.textContent = current;
+    
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    } else {
+      element.textContent = target;
+    }
+  }
+  
+  requestAnimationFrame(update);
+}
+
+function finishOnboarding() {
+  document.getElementById('onboarding').classList.remove('active');
+  document.getElementById('appLayout').style.display = 'flex';
+  
+  let startLabel = 'Main Entrance';
+  if (state.startPlace.type === 'room') {
+    const room = ROOMS.find(r => r.id === state.startPlace.id);
+    startLabel = room ? room.name : `Room ${state.startPlace.id}`;
+  } else if (state.startPlace.type === 'class') {
+    startLabel = `Class ${state.startPlace.id}`;
+  } else if (state.startPlace.type === 'entrance') {
+    startLabel = getEntranceLabel(state.startPlace.id);
+  }
+  document.getElementById('startPlaceText').textContent = startLabel;
+  
+  updateDashboardStats();
+  
+  switchTab('home');
+  renderBuildingsGrid();
+  renderPopular();
+  updateGreetingDate();
+  renderRoomFilters();
+  renderTeacherFilters();
+  renderClassFilters();
+  
+  if (mapInitialized && typeof createStartMarker === 'function') {
+    createStartMarker();
+  }
+  showToast('Configuration saved');
+}
+
+function updateDashboardStats() {
+  const stats = getCampusStats();
+  
+  const statElements = document.querySelectorAll('.stat-number');
+  const targets = [stats.buildings, stats.rooms, stats.teachers, stats.classes];
+  
+  statElements.forEach((el, index) => {
+    if (index < targets.length) {
+      const target = targets[index];
+      el.textContent = target;
+      el.classList.remove('updated');
+      void el.offsetWidth;
+      el.classList.add('updated');
+    }
+  });
+  
+  const badges = document.querySelectorAll('.side-item .badge');
+  if (badges.length >= 3) {
+    badges[0].textContent = stats.rooms;
+    badges[1].textContent = stats.teachers;
+    badges[2].textContent = stats.classes;
+  }
+}
+
 document.querySelectorAll('.nav-item').forEach(item => {
   if (item.dataset.tab) item.addEventListener('click', () => switchTab(item.dataset.tab));
 });
@@ -770,6 +870,12 @@ document.addEventListener('touchend', (e) => {
 
 window.addEventListener('load', async () => {
   await loadDataFromBackend();
+
+  const settingsRes = await fetch('/api/settings');
+  const settings = await settingsRes.json();
+  if (typeof applyMapSettings === 'function') {
+    applyMapSettings(settings);
+  }
   
   renderEntranceList();
   renderPlaceList();

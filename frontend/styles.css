@@ -2150,3 +2150,41 @@ html, body {
   .chat-sidebar { width: 100%; }
   .chat-toggle-btn { bottom: 80px; }
 }
+
+#buildingLabelsContainer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 17;
+}
+
+.building-label {
+  position: absolute;
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.55), 0 0 8px rgba(0,0,0,0.3);
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  text-transform: uppercase;
+}
+
+.campus-stat .val {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-dark);
+  transition: all 0.3s ease;
+}
+
+.campus-stat .val.updated {
+  animation: statPulse 0.4s ease;
+}
+
+@keyframes statPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); color: var(--accent-primary); }
+  100% { transform: scale(1); }
+}
