@@ -1,5 +1,3 @@
-# Dynamic Campus Navigator
-
 <div align="center">
 
 <img width="1264" height="309" alt="logo" src="https://github.com/user-attachments/assets/a5fe1542-b9a1-4e40-90aa-c40c9319275f" />
@@ -43,18 +41,18 @@ The entire stack (frontend + backend + AI) runs as a single Node.js process with
 
 ## Features
 
-| | Feature | Details |
-|---|---|---|
-| 🗺️ | **3D Campus Map** | Aerial view + floor-by-floor interiors, real-time with Three.js r128 |
-| 🧭 | **Indoor Navigation** | Path visualization + step-by-step directions |
-| 🔍 | **Unified Search** | Rooms, teachers, subjects, buildings in a single query |
-| 🤖 | **AI Assistant** | Multilingual RAG chatbot via Ollama + Llama 3.2:3b |
-| 🏗️ | **Campus Editor** | Manage buildings, rooms, and campus elements (sidewalks, streetlights, etc.) |
-| 🔐 | **Admin Panel** | PSK + TOTP authentication (or demo code) |
-| 💾 | **SQLite Persistence** | Local database, seed data ~300 rooms + 150 teachers |
-| 📤 | **CSV Import/Export** | Bulk management of teachers and rooms |
-| ⚙️ | **Dynamic Settings** | Enable/disable chatbot, lock map rotation, all from admin |
-| ⚡ | **Zero Cloud Dependencies** | Fully self-hosted, no external APIs |
+| Feature | Details |
+|---|---|
+| **3D Campus Map** | Aerial view + floor-by-floor interiors, real-time with Three.js r128 |
+| **Indoor Navigation** | Path visualization + step-by-step directions |
+| **Unified Search** | Rooms, teachers, subjects, buildings in a single query |
+| **AI Assistant** | Multilingual RAG chatbot via Ollama + Llama 3.2:3b |
+| **Campus Editor** | Manage buildings, rooms, and campus elements (sidewalks, streetlights, etc.) |
+| **Admin Panel** | PSK + TOTP authentication (or demo code) |
+| **SQLite Persistence** | Local database, seed data ~300 rooms + 150 teachers |
+| **CSV Import/Export** | Bulk management of teachers and rooms |
+| **Dynamic Settings** | Enable/disable chatbot, lock map rotation, all from admin |
+| **Zero Cloud Dependencies** | Fully self-hosted, no external APIs |
 
 ---
 
@@ -88,11 +86,11 @@ dynamic_campusnavigator/
 │   │   ├── db.js               readDB / writeDB helpers (SQLite better-sqlite3)
 │   │   ├── ragBuilder.js       Builds context string from DB for LLM
 │   │   ├── authMiddleware.js   JWT verification
+│   │   ├── schema.sql          Database schema, Why i put it here bhoo
 │   │   └── totp.js             TOTP generation/verification
 │   ├── data/
 │   │   └── campus.db           SQLite database (buildings, rooms, teachers, schedule, settings, campus_elements)
 │   ├── seed.js                 Example data generator
-│   └── schema.sql              Database schema
 │
 ├── Dockerfile
 ├── docker-compose.yml
@@ -158,7 +156,7 @@ When the user clicks an action button, the app navigates directly to the map vie
 | Model | RAM | Disk | Speed (CPU) | Quality | Notes |
 |-------|-----|------|-------------|---------|-------|
 | `llama3.2:3b` | ~2 GB | ~2 GB | ~3–6 tok/s | Excellent | **Recommended** — lightweight, fast, good Italian |
-| `qwen2.5:1.5b` | ~1.5 GB | ~1 GB | ~2–4 tok/s | Good | Fast alternative |
+| `qwen2.5:3b` | ~1.5 GB | ~1 GB | ~2–4 tok/s | Good | Fast alternative |
 | `mistral:7b` | ~4 GB | ~4 GB | ~1–3 tok/s | Excellent | If you have RAM available |
 | `neural-chat:7b` | ~4 GB | ~4 GB | ~1–3 tok/s | Good | Optimized for chat |
 
@@ -187,9 +185,9 @@ ollama pull llama3.2:3b
 
 Ollama runs as a system service on `http://localhost:11434` and starts automatically at boot.
 
-**3. Enable in the Admin Panel:**
+**3. Enable in the Admin Panel:** (It's enable by default)
 
-Admin Panel → ⚙️ Settings → **Chatbot AI** → toggle On
+Admin Panel → Settings → **Chatbot AI** → toggle On
 
 Or directly in the database, set `chatbotEnabled: true` in the `settings` table.
 
@@ -228,7 +226,7 @@ Add `GROQ_API_KEY=your_key` to `backend/.env`. Nothing else needs to change.
 
 ### Campus Map Editor
 
-Go to **Admin Panel → 🗺️ Campus Map**:
+Go to **Admin Panel → Campus Map**:
 
 - **Add building** → `+ New building` → fill form → position by dragging on map
 - **Edit building** → click from list, edit form
@@ -239,7 +237,7 @@ All coordinates (`x`, `z`) and dimensions (`w`, `d`) are saved automatically on 
 
 ### Elements Editor (Sidewalks, Streetlights, Benches, etc.)
 
-Go to **Admin Panel → 🗺️ Campus Map → ✏️ Edit Elements**:
+Go to **Admin Panel → Campus Map → Edit Elements**:
 
 A dedicated popup with a large SVG editor where you can:
 
@@ -259,7 +257,7 @@ Each element has:
 
 ### Settings
 
-Go to **Admin Panel → ⚙️ Settings**:
+Go to **Admin Panel → Settings**:
 
 **Chatbot AI** → Enable/disable the assistant. When disabled, no server latency for AI queries.
 
@@ -267,7 +265,7 @@ Go to **Admin Panel → ⚙️ Settings**:
 
 ### CSV Import/Export
 
-Go to **Admin Panel → 📤 CSV**:
+Go to **Admin Panel → CSV**:
 
 - **Export Teachers** → downloads CSV of teachers
 - **Export Rooms** → downloads CSV of rooms
@@ -405,7 +403,7 @@ VALUES ('T200', 'Prof. Marco Bianchi', 'Marco', 'Bianchi', 'Tecnologico', 'Elect
 
 ### Adding Campus Elements (Sidewalks, Streetlights, etc.)
 
-Go to **Admin Panel → Campus Map → ✏️ Edit Elements**:
+Go to **Admin Panel → Campus Map → Edit Elements**:
 
 Click one of the buttons (`+ sidewalk`, `+ streetlight`, `+ bench`, `+ flowerbed`, `+ fountain`). The element is created at `(0, 0)` and you can drag it on the map.
 
@@ -442,7 +440,7 @@ ollama pull llama3.2:3b
 
 ### Locking Map Rotation
 
-Go to **Admin Panel → ⚙️ Settings**:
+Go to **Admin Panel → Settings**:
 
 Enable **Lock map rotation**. Users will not be able to:
 - Drag horizontally on the map (lateral drag blocked)
@@ -540,7 +538,7 @@ Ollama starts automatically at server boot.
    CREATE INDEX idx_schedule_class ON schedule_slots(class_id);
    ```
 
-4. **Ollama using too much RAM?** Use a smaller model:
+4. **Ollama using too much RAM?** Use a smaller model: (It hasn't capabilities to made his homework in that case, so disable it please)
    ```bash
    ollama pull qwen2.5:0.5b  # Only 600 MB
    ```
@@ -567,14 +565,14 @@ MIT — see [LICENSE](LICENSE).
 
 ## Changelog
 
-### v2.0 (Current Version)
-- ✅ Migration from JSON flat-file to SQLite + better-sqlite3
-- ✅ Campus elements editor (sidewalks, streetlights, benches, flowerbeds, fountains) with drag-and-drop in dedicated popup
-- ✅ Dynamic building labels on minimap (legend removed)
-- ✅ "Lock map rotation" setting — disables lateral drag + rotation button
-- ✅ Default model change: Qwen 2.5 → Llama 3.2:3b (faster, better Italian)
-- ✅ RAG optimization: system prompt inside messages array for Ollama chat mode compatibility
-- ✅ Cleanup: removed console.log/warn/error from non-debug functions
+### v1.0 (Current Version)
+- Migration from JSON flat-file to SQLite + better-sqlite3
+- Campus elements editor (sidewalks, streetlights, benches, flowerbeds, fountains) with drag-and-drop in dedicated popup
+- Dynamic building labels on minimap (legend removed)
+- "Lock map rotation" setting — disables lateral drag + rotation button
+- Default model change: Qwen 2.5 → Llama 3.2:3b
+- RAG optimization: system prompt inside messages array for Ollama chat mode compatibility
+- Cleanup (Sorry, I forgot it before lol)
 
-### v1.0 (Baseline)
+### v0.1 (Baseline)
 - JSON database, admin panel chatbot, 3D map, navigation
